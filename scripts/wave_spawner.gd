@@ -65,8 +65,8 @@ func spawn_enemy(index: int, total: int) -> void:
 	var distance: float = randf_range(spawn_radius * 0.65, spawn_radius)
 	enemy.global_position = center + Vector2.RIGHT.rotated(angle) * distance
 
-	if enemy.has_signal("died"):
-		enemy.died.connect(_on_enemy_died)
+	if enemy.has_signal("defeated"):
+		enemy.defeated.connect(_on_enemy_defeated)
 
-func _on_enemy_died() -> void:
+func _on_enemy_defeated() -> void:
 	enemies_alive = max(enemies_alive - 1, 0)
