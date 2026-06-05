@@ -21,6 +21,7 @@ var defeated_once: bool = false
 
 func _ready() -> void:
 	hp = max_hp
+	add_to_group("enemies")
 	find_player()
 	game_manager = get_tree().get_first_node_in_group("game_manager")
 	queue_redraw()
@@ -74,7 +75,11 @@ func take_damage(amount: int) -> void:
 		defeat()
 
 func defeat() -> void:
+	if defeated_once:
+		return
 	defeated_once = true
+	set_physics_process(false)
+	set_process(false)
 	spawn_exp_orbs()
 	give_defeat_rewards()
 	defeated.emit()
@@ -94,28 +99,26 @@ func spawn_exp_orbs() -> void:
 		var direction: Vector2 = Vector2.RIGHT.rotated(angle)
 		var strength: float = randf_range(0.55, 1.2)
 		var orb: Node = exp_orb_scene.instantiate()
-		get_tree().current_scene.add_child(orb)
+		var parent: Node = get_tree().current_scene
+		if parent == null:
+			parent = get_parent()
+		if parent != null:
+			parent.add_child.call_deferred(orb)
 		if orb.has_method("setup"):
-			orb.setup(global_position, direction, strength, 1)
+			orb.call_deferred("setup", global_position, direction, strength, 1)
 
 func _draw() -> void:
-	# Temporary enemy placeholder.
 	draw_circle(Vector2.ZERO, 18.0, Color(0.9, 0.15, 0.12))
-
-	# Attack range circle while prototyping.
 	draw_arc(Vector2.ZERO, attack_range, 0.0, TAU, 36, Color(1.0, 0.35, 0.35, 0.35), 1.5)
 
-	# Small direction/aggro marker.
 	if is_instance_valid(player):
 		var to_player: Vector2 = player.global_position - global_position
 		if to_player.length() <= chase_range:
 			draw_line(Vector2.ZERO, to_player.normalized() * 22.0, Color(1.0, 0.7, 0.7), 2.0)
 
-	# Simple HP bar.
 	var bar_width: float = 44.0
 	var bar_height: float = 6.0
 	var hp_ratio: float = clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	var bar_pos: Vector2 = Vector2(-bar_width / 2.0, -34.0)
-
 	draw_rect(Rect2(bar_pos, Vector2(bar_width, bar_height)), Color(0.12, 0.05, 0.05))
 	draw_rect(Rect2(bar_pos, Vector2(bar_width * hp_ratio, bar_height)), Color(0.1, 0.9, 0.25))
