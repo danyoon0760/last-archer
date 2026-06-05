@@ -33,6 +33,10 @@ var volley_cooldown_timer: float = 0.0
 var snipe_cooldown_timer: float = 0.0
 var dodge_direction: Vector2 = Vector2.RIGHT
 var hp: int
+var level: int = 1
+var exp_current: int = 0
+var exp_to_next: int = 10
+var attack_bonus: int = 0
 var is_dead: bool = false
 
 func _ready() -> void:
@@ -164,7 +168,7 @@ func try_snipe() -> void:
 	spawn_arrow(
 		global_position + shoot_direction * 32.0,
 		shoot_direction,
-		snipe_damage,
+		snipe_damage + attack_bonus,
 		snipe_speed,
 		snipe_lifetime,
 		snipe_pierce_count,
@@ -195,13 +199,30 @@ func try_shoot_at_mouse() -> void:
 	var shoot_direction: Vector2 = get_aim_direction()
 	facing_direction = shoot_direction
 	attack_timer = get_current_attack_cooldown()
-	spawn_arrow(global_position + shoot_direction * 24.0, shoot_direction)
+	spawn_arrow(global_position + shoot_direction * 24.0, shoot_direction, 25 + attack_bonus)
 
 func spawn_arrow(start_position: Vector2, shoot_direction: Vector2, custom_damage: int = -1, custom_speed: float = -1.0, custom_lifetime: float = -1.0, custom_pierce_count: int = -1, custom_color: Color = Color(-1, -1, -1), custom_width: float = -1.0, custom_length: float = -1.0) -> void:
 	var arrow: Node = arrow_scene.instantiate()
 	get_tree().current_scene.add_child(arrow)
 	if arrow.has_method("setup"):
 		arrow.setup(start_position, shoot_direction, custom_damage, custom_speed, custom_lifetime, custom_pierce_count, custom_color, custom_width, custom_length)
+
+func gain_exp(amount: int) -> void:
+	if is_dead:
+		return
+	exp_current += amount
+	while exp_current >= exp_to_next:
+		exp_current -= exp_to_next
+		level_up()
+	queue_redraw()
+
+func level_up() -> void:
+	level += 1
+	exp_to_next = int(round(float(exp_to_next) * 1.35 + 5.0))
+	max_hp += 10
+	hp = max_hp
+	attack_bonus += 2
+	print("Level up! Level: %s" % level)
 
 func take_damage(amount: int) -> void:
 	if is_dead:
@@ -255,6 +276,15 @@ func _draw() -> void:
 	var bar_pos: Vector2 = Vector2(-bar_width / 2.0, -42.0)
 	draw_rect(Rect2(bar_pos, Vector2(bar_width, bar_height)), Color(0.08, 0.04, 0.04))
 	draw_rect(Rect2(bar_pos, Vector2(bar_width * hp_ratio, bar_height)), Color(0.1, 0.9, 0.25))
+
+	# EXP bar.
+	var exp_bar_width: float = 64.0
+	var exp_bar_height: float = 5.0
+	var exp_ratio: float = clampf(float(exp_current) / float(exp_to_next), 0.0, 1.0)
+	var exp_bar_pos: Vector2 = Vector2(-exp_bar_width / 2.0, -32.0)
+	draw_rect(Rect2(exp_bar_pos, Vector2(exp_bar_width, exp_bar_height)), Color(0.04, 0.08, 0.12))
+	draw_rect(Rect2(exp_bar_pos, Vector2(exp_bar_width * exp_ratio, exp_bar_height)), Color(0.2, 0.85, 1.0))
+	draw_string(ThemeDB.fallback_font, Vector2(-32, -48), "LV %s" % level, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color.WHITE)
 
 	# Skill indicators.
 	var q_text: String = "Q READY"
