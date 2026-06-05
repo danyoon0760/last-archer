@@ -103,7 +103,6 @@ func update_timers(delta: float) -> void:
 
 func move_toward_target() -> void:
 	var to_target: Vector2 = target_position - global_position
-
 	if to_target.length() > stop_distance:
 		facing_direction = to_target.normalized()
 		velocity = facing_direction * speed
@@ -113,13 +112,11 @@ func move_toward_target() -> void:
 func try_dodge() -> void:
 	if dodge_cooldown_timer > 0.0:
 		return
-
 	var mouse_direction: Vector2 = get_global_mouse_position() - global_position
 	if mouse_direction.length() < 1.0:
 		dodge_direction = facing_direction
 	else:
 		dodge_direction = mouse_direction.normalized()
-
 	facing_direction = dodge_direction
 	target_position = global_position + dodge_direction * 120.0
 	dodge_timer = dodge_duration
@@ -133,49 +130,29 @@ func try_rapid_fire() -> void:
 	rapid_fire_cooldown_timer = rapid_fire_cooldown
 
 func try_volley() -> void:
-	if volley_cooldown_timer > 0.0:
+	if volley_cooldown_timer > 0.0 or arrow_scene == null:
 		return
-	if arrow_scene == null:
-		push_warning("Player has no arrow_scene assigned.")
-		return
-
 	var base_direction: Vector2 = get_aim_direction()
 	facing_direction = base_direction
 	volley_cooldown_timer = volley_cooldown
-
 	var count: int = max(1, volley_arrow_count)
 	var spread_radians: float = deg_to_rad(volley_spread_degrees)
 	var start_angle: float = -spread_radians / 2.0
 	var step_angle: float = 0.0
 	if count > 1:
 		step_angle = spread_radians / float(count - 1)
-
 	for i in range(count):
 		var angle_offset: float = start_angle + step_angle * float(i)
 		var arrow_direction: Vector2 = base_direction.rotated(angle_offset).normalized()
 		spawn_arrow(global_position + arrow_direction * 24.0, arrow_direction)
 
 func try_snipe() -> void:
-	if snipe_cooldown_timer > 0.0:
+	if snipe_cooldown_timer > 0.0 or arrow_scene == null:
 		return
-	if arrow_scene == null:
-		push_warning("Player has no arrow_scene assigned.")
-		return
-
 	var shoot_direction: Vector2 = get_aim_direction()
 	facing_direction = shoot_direction
 	snipe_cooldown_timer = snipe_cooldown
-	spawn_arrow(
-		global_position + shoot_direction * 32.0,
-		shoot_direction,
-		snipe_damage + attack_bonus,
-		snipe_speed,
-		snipe_lifetime,
-		snipe_pierce_count,
-		Color(0.95, 1.0, 0.55),
-		7.0,
-		54.0
-	)
+	spawn_arrow(global_position + shoot_direction * 32.0, shoot_direction, snipe_damage + attack_bonus, snipe_speed, snipe_lifetime, snipe_pierce_count, Color(0.95, 1.0, 0.55), 7.0, 54.0)
 
 func get_current_attack_cooldown() -> float:
 	if rapid_fire_timer > 0.0:
@@ -183,19 +160,14 @@ func get_current_attack_cooldown() -> float:
 	return base_attack_cooldown
 
 func get_aim_direction() -> Vector2:
-	var mouse_position: Vector2 = get_global_mouse_position()
-	var aim_direction: Vector2 = mouse_position - global_position
+	var aim_direction: Vector2 = get_global_mouse_position() - global_position
 	if aim_direction.length() < 1.0:
 		return facing_direction
 	return aim_direction.normalized()
 
 func try_shoot_at_mouse() -> void:
-	if attack_timer > 0.0:
+	if attack_timer > 0.0 or arrow_scene == null:
 		return
-	if arrow_scene == null:
-		push_warning("Player has no arrow_scene assigned.")
-		return
-
 	var shoot_direction: Vector2 = get_aim_direction()
 	facing_direction = shoot_direction
 	attack_timer = get_current_attack_cooldown()
@@ -214,6 +186,7 @@ func gain_exp(amount: int) -> void:
 	while exp_current >= exp_to_next:
 		exp_current -= exp_to_next
 		level_up()
+	notify_stats_changed()
 	queue_redraw()
 
 func level_up() -> void:
@@ -225,26 +198,38 @@ func level_up() -> void:
 	print("Level up! Level: %s" % level)
 
 func take_damage(amount: int) -> void:
-	if is_dead:
+	if is_dead or invincible_timer > 0.0:
 		return
-	if invincible_timer > 0.0:
-		return
-
 	hp -= amount
 	invincible_timer = 0.25
 	if hp <= 0:
 		hp = 0
 		die()
+	notify_stats_changed()
 	queue_redraw()
+
+func full_heal() -> void:
+	if is_dead:
+		return
+	hp = max_hp
+	notify_stats_changed()
+	queue_redraw()
+
+func get_hud_text() -> String:
+	return "LV %s  HP %s/%s  EXP %s/%s  ATK+%s" % [level, hp, max_hp, exp_current, exp_to_next, attack_bonus]
+
+func notify_stats_changed() -> void:
+	var game_manager := get_tree().get_first_node_in_group("game_manager")
+	if game_manager != null and game_manager.has_signal("stats_changed"):
+		game_manager.stats_changed.emit()
 
 func die() -> void:
 	is_dead = true
 	velocity = Vector2.ZERO
 	print("You died. Press R to restart.")
+	notify_stats_changed()
 
 func _draw() -> void:
-	# Temporary player placeholder.
-	# Later, this will be replaced with the pixel archer sprite.
 	var body_color: Color = Color(0.1, 0.35, 1.0)
 	if is_dead:
 		body_color = Color(0.25, 0.25, 0.25)
@@ -258,58 +243,31 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, 16.0, body_color)
 	draw_line(Vector2.ZERO, facing_direction * 24.0, Color.WHITE, 3.0)
 
-	# W volley aim preview while ready.
 	if volley_cooldown_timer <= 0.0 and not is_dead:
-		var left_preview: Vector2 = facing_direction.rotated(deg_to_rad(-volley_spread_degrees / 2.0)) * 42.0
-		var right_preview: Vector2 = facing_direction.rotated(deg_to_rad(volley_spread_degrees / 2.0)) * 42.0
-		draw_line(Vector2.ZERO, left_preview, Color(0.55, 0.75, 1.0, 0.45), 1.0)
-		draw_line(Vector2.ZERO, right_preview, Color(0.55, 0.75, 1.0, 0.45), 1.0)
-
-	# R snipe aim preview while ready.
+		draw_line(Vector2.ZERO, facing_direction.rotated(deg_to_rad(-volley_spread_degrees / 2.0)) * 42.0, Color(0.55, 0.75, 1.0, 0.45), 1.0)
+		draw_line(Vector2.ZERO, facing_direction.rotated(deg_to_rad(volley_spread_degrees / 2.0)) * 42.0, Color(0.55, 0.75, 1.0, 0.45), 1.0)
 	if snipe_cooldown_timer <= 0.0 and not is_dead:
 		draw_line(Vector2.ZERO, facing_direction * 74.0, Color(1.0, 0.95, 0.35, 0.5), 2.0)
 
-	# Player HP bar.
 	var bar_width: float = 54.0
-	var bar_height: float = 7.0
 	var hp_ratio: float = clampf(float(hp) / float(max_hp), 0.0, 1.0)
-	var bar_pos: Vector2 = Vector2(-bar_width / 2.0, -42.0)
-	draw_rect(Rect2(bar_pos, Vector2(bar_width, bar_height)), Color(0.08, 0.04, 0.04))
-	draw_rect(Rect2(bar_pos, Vector2(bar_width * hp_ratio, bar_height)), Color(0.1, 0.9, 0.25))
+	draw_rect(Rect2(Vector2(-bar_width / 2.0, -42.0), Vector2(bar_width, 7.0)), Color(0.08, 0.04, 0.04))
+	draw_rect(Rect2(Vector2(-bar_width / 2.0, -42.0), Vector2(bar_width * hp_ratio, 7.0)), Color(0.1, 0.9, 0.25))
 
-	# EXP bar.
 	var exp_bar_width: float = 64.0
-	var exp_bar_height: float = 5.0
 	var exp_ratio: float = clampf(float(exp_current) / float(exp_to_next), 0.0, 1.0)
-	var exp_bar_pos: Vector2 = Vector2(-exp_bar_width / 2.0, -32.0)
-	draw_rect(Rect2(exp_bar_pos, Vector2(exp_bar_width, exp_bar_height)), Color(0.04, 0.08, 0.12))
-	draw_rect(Rect2(exp_bar_pos, Vector2(exp_bar_width * exp_ratio, exp_bar_height)), Color(0.2, 0.85, 1.0))
+	draw_rect(Rect2(Vector2(-exp_bar_width / 2.0, -32.0), Vector2(exp_bar_width, 5.0)), Color(0.04, 0.08, 0.12))
+	draw_rect(Rect2(Vector2(-exp_bar_width / 2.0, -32.0), Vector2(exp_bar_width * exp_ratio, 5.0)), Color(0.2, 0.85, 1.0))
 	draw_string(ThemeDB.fallback_font, Vector2(-32, -48), "LV %s" % level, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color.WHITE)
 
-	# Skill indicators.
-	var q_text: String = "Q READY"
-	var q_color: Color = Color.WHITE
+	var q_text: String = "Q READY" if rapid_fire_cooldown_timer <= 0.0 else "Q CD"
 	if rapid_fire_timer > 0.0:
 		q_text = "Q ACTIVE"
-		q_color = Color(0.75, 0.85, 1.0)
-	elif rapid_fire_cooldown_timer > 0.0:
-		q_text = "Q CD"
-		q_color = Color(0.6, 0.6, 0.6)
-	draw_string(ThemeDB.fallback_font, Vector2(-82, 42), q_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, q_color)
-
-	var w_text: String = "W READY"
-	var w_color: Color = Color.WHITE
-	if volley_cooldown_timer > 0.0:
-		w_text = "W CD"
-		w_color = Color(0.6, 0.6, 0.6)
-	draw_string(ThemeDB.fallback_font, Vector2(-10, 42), w_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, w_color)
-
-	var r_text: String = "R READY"
-	var r_color: Color = Color.WHITE
-	if snipe_cooldown_timer > 0.0:
-		r_text = "R CD"
-		r_color = Color(0.6, 0.6, 0.6)
-	draw_string(ThemeDB.fallback_font, Vector2(52, 42), r_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, r_color)
+	var w_text: String = "W READY" if volley_cooldown_timer <= 0.0 else "W CD"
+	var r_text: String = "R READY" if snipe_cooldown_timer <= 0.0 else "R CD"
+	draw_string(ThemeDB.fallback_font, Vector2(-82, 42), q_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color.WHITE)
+	draw_string(ThemeDB.fallback_font, Vector2(-10, 42), w_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color.WHITE)
+	draw_string(ThemeDB.fallback_font, Vector2(52, 42), r_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color.WHITE)
 
 	if is_dead:
 		draw_string(ThemeDB.fallback_font, Vector2(-58, -58), "DEAD - Press R", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color.WHITE)
