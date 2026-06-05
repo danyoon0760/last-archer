@@ -4,42 +4,23 @@ signal stats_changed
 signal wave_changed
 signal town_toggled(is_open: bool)
 
-var level: int = 1
-var exp_current: int = 0
-var exp_to_next: int = 10
 var gold: int = 0
 var slime_gel: int = 0
-var attack_bonus: int = 0
-var max_hp_bonus: int = 0
 var current_wave: int = 0
 var town_open: bool = false
 
+func _ready() -> void:
+	add_to_group("game_manager")
+	stats_changed.emit()
+	wave_changed.emit()
+
 func reset_run() -> void:
-	level = 1
-	exp_current = 0
-	exp_to_next = 10
 	gold = 0
 	slime_gel = 0
-	attack_bonus = 0
-	max_hp_bonus = 0
 	current_wave = 0
 	town_open = false
 	stats_changed.emit()
 	wave_changed.emit()
-
-func gain_exp(amount: int) -> void:
-	exp_current += amount
-	while exp_current >= exp_to_next:
-		exp_current -= exp_to_next
-		level_up()
-	stats_changed.emit()
-
-func level_up() -> void:
-	level += 1
-	exp_to_next = int(round(float(exp_to_next) * 1.35 + 5.0))
-	attack_bonus += 2
-	max_hp_bonus += 10
-	print("Level up! Level: %s" % level)
 
 func add_kill_rewards(gold_amount: int, slime_gel_amount: int) -> void:
 	gold += gold_amount
@@ -73,4 +54,4 @@ func sell_slime_gel() -> void:
 	stats_changed.emit()
 
 func get_status_text() -> String:
-	return "LV %s  EXP %s/%s  GOLD %s  GEL %s  WAVE %s" % [level, exp_current, exp_to_next, gold, slime_gel, current_wave]
+	return "GOLD %s  GEL %s  WAVE %s" % [gold, slime_gel, current_wave]
