@@ -12,7 +12,7 @@ enum S {IDLE,MOVE,CHASE,WINDUP,RECOVER,AMOVE,HOLD}
 @export var damage := 25
 @export var projectile_speed := 1450.0
 @export var projectile_lifetime := 1.1
-@export var click_radius := 46.0
+@export var click_radius := 70.0
 @export var arrow_scene: PackedScene
 
 var state := S.IDLE
@@ -139,7 +139,7 @@ func shoot():
 	var v=target.global_position-global_position
 	v=dir if v.length()<1 else v.normalized(); dir=v
 	var a=arrow_scene.instantiate(); get_tree().current_scene.add_child(a)
-	if a.has_method("setup"): a.setup(global_position+v*24,v,damage+attack_bonus,projectile_speed,projectile_lifetime)
+	if a.has_method("setup"): a.setup(global_position+v*24,v,damage+attack_bonus,projectile_speed,projectile_lifetime,-1,Color(-1,-1,-1),-1.0,-1.0,target)
 
 func lost():
 	cancel(); target=null; t=0
