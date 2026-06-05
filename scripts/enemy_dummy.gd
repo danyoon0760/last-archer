@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+signal defeated
+
 @export var max_hp: int = 100
 @export var move_speed: float = 135.0
 @export var chase_range: float = 620.0
@@ -8,17 +10,25 @@ extends CharacterBody2D
 @export var attack_cooldown: float = 0.65
 @export var exp_orb_scene: PackedScene
 @export var exp_orb_count: int = 3
+@export var gold_reward: int = 2
+@export var slime_gel_reward: int = 1
 
 var hp: int
 var attack_timer: float = 0.0
 var player: Node2D
+var game_manager: Node
+var defeated_once: bool = false
 
 func _ready() -> void:
 	hp = max_hp
 	find_player()
+	game_manager = get_tree().get_first_node_in_group("game_manager")
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
+	if defeated_once:
+		return
+
 	if attack_timer > 0.0:
 		attack_timer = maxf(attack_timer - delta, 0.0)
 
@@ -56,14 +66,25 @@ func try_attack_player() -> void:
 		player.take_damage(attack_damage)
 
 func take_damage(amount: int) -> void:
+	if defeated_once:
+		return
 	hp -= amount
 	queue_redraw()
 	if hp <= 0:
-		die()
+		defeat()
 
-func die() -> void:
+func defeat() -> void:
+	defeated_once = true
 	spawn_exp_orbs()
+	give_defeat_rewards()
+	defeated.emit()
 	queue_free()
+
+func give_defeat_rewards() -> void:
+	if not is_instance_valid(game_manager):
+		game_manager = get_tree().get_first_node_in_group("game_manager")
+	if is_instance_valid(game_manager) and game_manager.has_method("add_defeat_rewards"):
+		game_manager.add_defeat_rewards(gold_reward, slime_gel_reward)
 
 func spawn_exp_orbs() -> void:
 	if exp_orb_scene == null:
