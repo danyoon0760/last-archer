@@ -5,10 +5,10 @@ enum S {IDLE,MOVE,CHASE,WINDUP,RECOVER,AMOVE,HOLD}
 @export var move_speed := 400.0
 @export var max_hp := 100
 @export var attack_range := 430.0
-@export var attack_speed := 0.90
-@export var windup_ratio := 0.22
-@export var min_windup := 0.08
-@export var recovery := 0.03
+@export var attack_speed := 1.25
+@export var windup_ratio := 0.20
+@export var min_windup := 0.07
+@export var recovery := 0.02
 @export var damage := 25
 @export var projectile_speed := 1450.0
 @export var projectile_lifetime := 1.1
@@ -161,7 +161,7 @@ func face(p):
 
 func ready(): return now()>=last_shot+interval()
 func interval(): return 1.0/maxf(aspeed(),0.1)
-func aspeed(): return attack_speed+(0.7 if q>0 else 0.0)
+func aspeed(): return attack_speed+(0.9 if q>0 else 0.0)
 func windup_time(): return maxf(min_windup,interval()*windup_ratio)
 func now(): return Time.get_ticks_msec()/1000.0
 func valid(x): return x!=null and is_instance_valid(x) and x is Node2D and (x as Node2D).is_inside_tree()
