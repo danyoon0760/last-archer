@@ -6,6 +6,8 @@ extends CharacterBody2D
 @export var attack_range: float = 72.0
 @export var attack_damage: int = 12
 @export var attack_cooldown: float = 0.65
+@export var exp_orb_scene: PackedScene
+@export var exp_orb_count: int = 3
 
 var hp: int
 var attack_timer: float = 0.0
@@ -57,7 +59,23 @@ func take_damage(amount: int) -> void:
 	hp -= amount
 	queue_redraw()
 	if hp <= 0:
-		queue_free()
+		die()
+
+func die() -> void:
+	spawn_exp_orbs()
+	queue_free()
+
+func spawn_exp_orbs() -> void:
+	if exp_orb_scene == null:
+		return
+	for i in range(exp_orb_count):
+		var angle: float = randf_range(0.0, TAU)
+		var direction: Vector2 = Vector2.RIGHT.rotated(angle)
+		var strength: float = randf_range(0.55, 1.2)
+		var orb: Node = exp_orb_scene.instantiate()
+		get_tree().current_scene.add_child(orb)
+		if orb.has_method("setup"):
+			orb.setup(global_position, direction, strength, 1)
 
 func _draw() -> void:
 	# Temporary enemy placeholder.
