@@ -3,12 +3,15 @@ extends CharacterBody2D
 @export var speed: float = 350.0
 @export var stop_distance: float = 6.0
 @export var max_hp: int = 100
-@export var attack_cooldown: float = 0.35
+@export var base_attack_cooldown: float = 0.35
 @export var arrow_scene: PackedScene
 @export var dodge_speed: float = 850.0
 @export var dodge_duration: float = 0.16
 @export var dodge_cooldown: float = 1.2
 @export var invincible_duration: float = 0.35
+@export var rapid_fire_duration: float = 3.0
+@export var rapid_fire_cooldown: float = 8.0
+@export var rapid_fire_attack_cooldown: float = 0.16
 
 var target_position: Vector2
 var facing_direction: Vector2 = Vector2.RIGHT
@@ -16,6 +19,8 @@ var attack_timer: float = 0.0
 var dodge_timer: float = 0.0
 var dodge_cooldown_timer: float = 0.0
 var invincible_timer: float = 0.0
+var rapid_fire_timer: float = 0.0
+var rapid_fire_cooldown_timer: float = 0.0
 var dodge_direction: Vector2 = Vector2.RIGHT
 var hp: int
 var is_dead: bool = false
@@ -41,6 +46,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_E:
 			try_dodge()
+		elif event.keycode == KEY_Q:
+			try_rapid_fire()
 
 func _physics_process(delta: float) -> void:
 	update_timers(delta)
@@ -67,6 +74,10 @@ func update_timers(delta: float) -> void:
 		dodge_cooldown_timer = maxf(dodge_cooldown_timer - delta, 0.0)
 	if invincible_timer > 0.0:
 		invincible_timer = maxf(invincible_timer - delta, 0.0)
+	if rapid_fire_timer > 0.0:
+		rapid_fire_timer = maxf(rapid_fire_timer - delta, 0.0)
+	if rapid_fire_cooldown_timer > 0.0:
+		rapid_fire_cooldown_timer = maxf(rapid_fire_cooldown_timer - delta, 0.0)
 
 func move_toward_target() -> void:
 	var to_target: Vector2 = target_position - global_position
@@ -93,6 +104,17 @@ func try_dodge() -> void:
 	dodge_cooldown_timer = dodge_cooldown
 	invincible_timer = invincible_duration
 
+func try_rapid_fire() -> void:
+	if rapid_fire_cooldown_timer > 0.0:
+		return
+	rapid_fire_timer = rapid_fire_duration
+	rapid_fire_cooldown_timer = rapid_fire_cooldown
+
+func get_current_attack_cooldown() -> float:
+	if rapid_fire_timer > 0.0:
+		return rapid_fire_attack_cooldown
+	return base_attack_cooldown
+
 func try_shoot_at_mouse() -> void:
 	if attack_timer > 0.0:
 		return
@@ -108,7 +130,7 @@ func try_shoot_at_mouse() -> void:
 		shoot_direction = shoot_direction.normalized()
 
 	facing_direction = shoot_direction
-	attack_timer = attack_cooldown
+	attack_timer = get_current_attack_cooldown()
 
 	var arrow: Node = arrow_scene.instantiate()
 	get_tree().current_scene.add_child(arrow)
@@ -143,6 +165,8 @@ func _draw() -> void:
 		body_color = Color(0.3, 0.9, 1.0)
 	elif dodge_timer > 0.0:
 		body_color = Color(0.2, 0.75, 1.0)
+	elif rapid_fire_timer > 0.0:
+		body_color = Color(0.45, 0.6, 1.0)
 
 	draw_circle(Vector2.ZERO, 16.0, body_color)
 	draw_line(Vector2.ZERO, facing_direction * 24.0, Color.WHITE, 3.0)
@@ -154,6 +178,14 @@ func _draw() -> void:
 	var bar_pos: Vector2 = Vector2(-bar_width / 2.0, -42.0)
 	draw_rect(Rect2(bar_pos, Vector2(bar_width, bar_height)), Color(0.08, 0.04, 0.04))
 	draw_rect(Rect2(bar_pos, Vector2(bar_width * hp_ratio, bar_height)), Color(0.1, 0.9, 0.25))
+
+	# Q skill indicator.
+	if rapid_fire_timer > 0.0:
+		draw_string(ThemeDB.fallback_font, Vector2(-32, 42), "Q ACTIVE", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color(0.75, 0.85, 1.0))
+	elif rapid_fire_cooldown_timer > 0.0:
+		draw_string(ThemeDB.fallback_font, Vector2(-24, 42), "Q CD", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color(0.6, 0.6, 0.6))
+	else:
+		draw_string(ThemeDB.fallback_font, Vector2(-28, 42), "Q READY", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color.WHITE)
 
 	if is_dead:
 		draw_string(ThemeDB.fallback_font, Vector2(-58, -58), "DEAD - Press R", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color.WHITE)
