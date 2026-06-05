@@ -1,23 +1,75 @@
 extends CharacterBody2D
 
-@export var speed: float = 350.0
+# LoL-style marksman controller.
+# Core loop: move -> stop for windup -> fire projectile -> recovery can be canceled by move -> cooldown keeps ticking while moving.
+
+enum PlayerState {
+	IDLE,
+	MOVING,
+	CHASING_TARGET,
+	ATTACK_WINDUP,
+	ATTACK_RECOVERY,
+	ATTACK_MOVE,
+	HOLD
+}
+
+@export var move_speed: float = 380.0
+@export var stop_distance: float = 6.0
 @export var max_hp: int = 100
-@export var attack_range: float = 330.0
-@export var attack_cooldown: float = 0.72
-@export var attack_windup: float = 0.18
+
+@export var attack_range: float = 360.0
+@export var attack_speed: float = 1.0
+@export var attack_windup_time: float = 0.24
+@export var attack_recovery_time: float = 0.20
+@export var basic_attack_damage: int = 25
+@export var projectile_speed: float = 980.0
+@export var projectile_lifetime: float = 1.4
 @export var arrow_scene: PackedScene
+
 @export var dodge_speed: float = 850.0
 @export var dodge_duration: float = 0.16
 @export var dodge_cooldown: float = 1.2
+@export var invincible_duration: float = 0.35
+
 @export var q_duration: float = 3.0
 @export var q_cooldown: float = 8.0
-@export var q_attack_cooldown: float = 0.38
-@export var q_windup: float = 0.11
-@export var w_cooldown: float = 4.0
-@export var r_cooldown: float = 10.0
+@export var q_attack_speed_bonus: float = 1.4
 
-var target_position: Vector2
+@export var w_cooldown: float = 4.0
+@export var w_arrow_count: int = 5
+@export var w_spread_degrees: float = 42.0
+
+@export var r_cooldown: float = 10.0
+@export var r_damage: int = 95
+@export var r_projectile_speed: float = 1250.0
+@export var r_projectile_lifetime: float = 1.8
+@export var r_pierce_count: int = 3
+
+var state: int = PlayerState.IDLE
+var previous_state: int = PlayerState.IDLE
+
+var move_destination: Vector2
 var facing_direction: Vector2 = Vector2.RIGHT
+var current_target: Node2D
+var attack_move_point: Vector2
+var attack_move_armed: bool = false
+var hold_position: bool = false
+
+var last_attack_time: float = -999.0
+var attack_phase_timer: float = 0.0
+var has_fired_attack: bool = false
+var attack_release_direction: Vector2 = Vector2.RIGHT
+
+var dodge_timer: float = 0.0
+var dodge_cooldown_timer: float = 0.0
+var dodge_direction: Vector2 = Vector2.RIGHT
+var invincible_timer: float = 0.0
+
+var q_timer: float = 0.0
+var q_cooldown_timer: float = 0.0
+var w_cooldown_timer: float = 0.0
+var r_cooldown_timer: float = 0.0
+
 var hp: int
 var level: int = 1
 var exp_current: int = 0
@@ -25,26 +77,10 @@ var exp_to_next: int = 10
 var attack_bonus: int = 0
 var is_dead: bool = false
 
-var aa_cd: float = 0.0
-var aa_windup_left: float = 0.0
-var aa_target: Node2D
-var a_move_armed: bool = false
-var a_move_active: bool = false
-var a_move_point: Vector2
-
-var dodge_left: float = 0.0
-var dodge_cd_left: float = 0.0
-var dodge_dir: Vector2 = Vector2.RIGHT
-var invuln_left: float = 0.0
-var q_left: float = 0.0
-var q_cd_left: float = 0.0
-var w_cd_left: float = 0.0
-var r_cd_left: float = 0.0
-
 func _ready() -> void:
 	hp = max_hp
-	target_position = global_position
-	a_move_point = global_position
+	move_destination = global_position
+	attack_move_point = global_position
 	add_to_group("player")
 	queue_redraw()
 
@@ -55,227 +91,414 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseButton and event.pressed:
-		var p: Vector2 = get_global_mouse_position()
+		var click_position: Vector2 = get_global_mouse_position()
 		if event.button_index == MOUSE_BUTTON_RIGHT:
-			if a_move_armed:
-				a_move_armed = false
-				order_attack_move(p)
-			else:
-				var e: Node2D = enemy_at(p)
-				if e != null:
-					order_attack(e)
-				else:
-					order_move(p)
-		# Left click is intentionally unused for combat. LoL-style control is right-click based.
+			handle_right_click(click_position)
+		# Left click is intentionally unused for combat. This controller is right-click based.
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_A:
-			a_move_armed = true
-		elif event.keycode == KEY_Q:
-			cast_q()
-		elif event.keycode == KEY_W:
-			cast_w()
-		elif event.keycode == KEY_E:
-			cast_e()
-		elif event.keycode == KEY_R:
-			cast_r()
+		match event.keycode:
+			KEY_A:
+				attack_move_armed = true
+				hold_position = false
+			KEY_S:
+				stop_all_actions()
+			KEY_H:
+				enter_hold_position()
+			KEY_Q:
+				cast_q()
+			KEY_W:
+				cast_w()
+			KEY_E:
+				cast_e()
+			KEY_R:
+				cast_r()
+
+func handle_right_click(click_position: Vector2) -> void:
+	if attack_move_armed:
+		attack_move_armed = false
+		issue_attack_move(click_position)
+		return
+
+	var clicked_enemy: Node2D = find_enemy_under_point(click_position)
+	if clicked_enemy != null:
+		issue_target_attack(clicked_enemy)
+	else:
+		issue_move(click_position)
 
 func _physics_process(delta: float) -> void:
-	tick_timers(delta)
-	tick_windup(delta)
+	update_timers(delta)
 
 	if is_dead:
 		velocity = Vector2.ZERO
 		queue_redraw()
 		return
 
-	if dodge_left > 0.0:
-		velocity = dodge_dir * dodge_speed
-	else:
-		adc_logic()
-		move_logic()
+	if dodge_timer > 0.0:
+		velocity = dodge_direction * dodge_speed
+		move_and_slide()
+		queue_redraw()
+		return
 
+	update_state(delta)
 	move_and_slide()
 	queue_redraw()
 
-func tick_timers(delta: float) -> void:
-	aa_cd = maxf(aa_cd - delta, 0.0)
-	dodge_left = maxf(dodge_left - delta, 0.0)
-	dodge_cd_left = maxf(dodge_cd_left - delta, 0.0)
-	invuln_left = maxf(invuln_left - delta, 0.0)
-	q_left = maxf(q_left - delta, 0.0)
-	q_cd_left = maxf(q_cd_left - delta, 0.0)
-	w_cd_left = maxf(w_cd_left - delta, 0.0)
-	r_cd_left = maxf(r_cd_left - delta, 0.0)
+func update_timers(delta: float) -> void:
+	dodge_timer = maxf(dodge_timer - delta, 0.0)
+	dodge_cooldown_timer = maxf(dodge_cooldown_timer - delta, 0.0)
+	invincible_timer = maxf(invincible_timer - delta, 0.0)
+	q_timer = maxf(q_timer - delta, 0.0)
+	q_cooldown_timer = maxf(q_cooldown_timer - delta, 0.0)
+	w_cooldown_timer = maxf(w_cooldown_timer - delta, 0.0)
+	r_cooldown_timer = maxf(r_cooldown_timer - delta, 0.0)
 
-func tick_windup(delta: float) -> void:
-	if aa_windup_left <= 0.0:
-		return
-	aa_windup_left = maxf(aa_windup_left - delta, 0.0)
-	if aa_windup_left <= 0.0:
-		release_auto_attack()
+func update_state(delta: float) -> void:
+	match state:
+		PlayerState.IDLE:
+			velocity = Vector2.ZERO
+		PlayerState.MOVING:
+			process_moving()
+		PlayerState.CHASING_TARGET:
+			process_chasing_target()
+		PlayerState.ATTACK_WINDUP:
+			process_attack_windup(delta)
+		PlayerState.ATTACK_RECOVERY:
+			process_attack_recovery(delta)
+		PlayerState.ATTACK_MOVE:
+			process_attack_move()
+		PlayerState.HOLD:
+			process_hold_position()
 
-func order_move(p: Vector2) -> void:
-	cancel_windup()
-	aa_target = null
-	a_move_active = false
-	target_position = p
+func issue_move(destination: Vector2) -> void:
+	if state == PlayerState.ATTACK_WINDUP and not has_fired_attack:
+		cancel_unfired_attack()
+	move_destination = destination
+	current_target = null
+	hold_position = false
+	attack_move_armed = false
+	set_state(PlayerState.MOVING)
 
-func order_attack(e: Node2D) -> void:
-	a_move_active = false
-	aa_target = e
+func issue_target_attack(target: Node2D) -> void:
+	current_target = target
+	hold_position = false
+	attack_move_armed = false
+	set_state(PlayerState.CHASING_TARGET)
 
-func order_attack_move(p: Vector2) -> void:
-	cancel_windup()
-	a_move_active = true
-	a_move_point = p
-	aa_target = null
-	target_position = p
+func issue_attack_move(destination: Vector2) -> void:
+	if state == PlayerState.ATTACK_WINDUP and not has_fired_attack:
+		cancel_unfired_attack()
+	attack_move_point = destination
+	move_destination = destination
+	current_target = null
+	hold_position = false
+	set_state(PlayerState.ATTACK_MOVE)
 
-func cancel_windup() -> void:
-	if aa_windup_left > 0.0:
-		aa_windup_left = 0.0
+func stop_all_actions() -> void:
+	cancel_unfired_attack()
+	current_target = null
+	attack_move_armed = false
+	hold_position = false
+	move_destination = global_position
+	velocity = Vector2.ZERO
+	set_state(PlayerState.IDLE)
 
-func adc_logic() -> void:
-	if aa_windup_left > 0.0:
+func enter_hold_position() -> void:
+	cancel_unfired_attack()
+	current_target = null
+	attack_move_armed = false
+	hold_position = true
+	move_destination = global_position
+	velocity = Vector2.ZERO
+	set_state(PlayerState.HOLD)
+
+func process_moving() -> void:
+	move_toward_destination(move_destination)
+	if global_position.distance_to(move_destination) <= stop_distance:
 		velocity = Vector2.ZERO
+		set_state(PlayerState.IDLE)
+
+func process_chasing_target() -> void:
+	if not validate_target(current_target):
+		current_target = null
+		set_state(PlayerState.IDLE)
 		return
 
-	if a_move_active:
-		var e: Node2D = enemy_for_attack_move(a_move_point)
-		if e != null:
-			aa_target = e
-		elif aa_target == null:
-			target_position = a_move_point
-
-	if aa_target == null or not is_instance_valid(aa_target):
-		aa_target = null
-		return
-
-	var to_e: Vector2 = aa_target.global_position - global_position
-	var d: float = to_e.length()
-	if d <= attack_range:
-		if d > 1.0:
-			facing_direction = to_e.normalized()
-		target_position = global_position
+	var distance_to_target: float = global_position.distance_to(current_target.global_position)
+	if distance_to_target <= attack_range:
 		velocity = Vector2.ZERO
-		start_auto_attack(aa_target)
-	else:
-		target_position = aa_target.global_position - to_e.normalized() * (attack_range * 0.86)
-
-func start_auto_attack(e: Node2D) -> void:
-	if aa_cd > 0.0 or aa_windup_left > 0.0 or arrow_scene == null:
+		face_position(current_target.global_position)
+		if can_attack_now():
+			start_attack_windup(current_target)
 		return
-	aa_target = e
-	aa_cd = current_aa_cd()
-	aa_windup_left = current_windup()
 
-func release_auto_attack() -> void:
-	if arrow_scene == null or is_dead:
+	var direction_from_target_to_player: Vector2 = (global_position - current_target.global_position).normalized()
+	move_destination = current_target.global_position + direction_from_target_to_player * (attack_range * 0.88)
+	move_toward_destination(move_destination)
+
+func process_attack_move() -> void:
+	var target: Node2D = select_attack_move_target(attack_move_point)
+	if target != null:
+		current_target = target
+		process_chasing_target()
 		return
-	if aa_target != null and is_instance_valid(aa_target):
-		var dir: Vector2 = aa_target.global_position - global_position
-		if dir.length() < 1.0:
-			dir = facing_direction
+
+	move_toward_destination(attack_move_point)
+	if global_position.distance_to(attack_move_point) <= stop_distance:
+		velocity = Vector2.ZERO
+		set_state(PlayerState.IDLE)
+
+func process_hold_position() -> void:
+	velocity = Vector2.ZERO
+	var target: Node2D = select_attack_move_target(get_global_mouse_position())
+	if target != null:
+		current_target = target
+		if can_attack_now():
+			face_position(current_target.global_position)
+			start_attack_windup(current_target)
+
+func start_attack_windup(target: Node2D) -> void:
+	if arrow_scene == null:
+		return
+	current_target = target
+	attack_phase_timer = 0.0
+	has_fired_attack = false
+	velocity = Vector2.ZERO
+	set_state(PlayerState.ATTACK_WINDUP)
+
+func process_attack_windup(delta: float) -> void:
+	velocity = Vector2.ZERO
+	attack_phase_timer += delta
+
+	if not validate_target(current_target):
+		cancel_unfired_attack()
+		return
+
+	var target_distance: float = global_position.distance_to(current_target.global_position)
+	if target_distance > attack_range and not has_fired_attack:
+		cancel_unfired_attack()
+		set_state(PlayerState.CHASING_TARGET)
+		return
+
+	face_position(current_target.global_position)
+	if attack_phase_timer >= get_windup_time():
+		fire_basic_attack()
+		has_fired_attack = true
+		last_attack_time = get_time_seconds()
+		attack_phase_timer = 0.0
+		set_state(PlayerState.ATTACK_RECOVERY)
+
+func process_attack_recovery(delta: float) -> void:
+	velocity = Vector2.ZERO
+	attack_phase_timer += delta
+	if attack_phase_timer >= get_recovery_time():
+		attack_phase_timer = 0.0
+		if hold_position:
+			set_state(PlayerState.HOLD)
+		elif previous_state == PlayerState.ATTACK_MOVE:
+			set_state(PlayerState.ATTACK_MOVE)
+		elif validate_target(current_target):
+			set_state(PlayerState.CHASING_TARGET)
 		else:
-			dir = dir.normalized()
-		facing_direction = dir
-		spawn_arrow(global_position + dir * 24.0, dir, 25 + attack_bonus)
+			set_state(PlayerState.IDLE)
 
-func move_logic() -> void:
-	if aa_windup_left > 0.0:
+func fire_basic_attack() -> void:
+	if arrow_scene == null or not validate_target(current_target):
+		return
+	var direction: Vector2 = current_target.global_position - global_position
+	if direction.length() < 1.0:
+		direction = facing_direction
+	else:
+		direction = direction.normalized()
+	attack_release_direction = direction
+	facing_direction = direction
+	spawn_arrow(
+		global_position + direction * 24.0,
+		direction,
+		basic_attack_damage + attack_bonus,
+		projectile_speed,
+		projectile_lifetime
+	)
+
+func cancel_unfired_attack() -> void:
+	if state == PlayerState.ATTACK_WINDUP and not has_fired_attack:
+		attack_phase_timer = 0.0
+		has_fired_attack = false
+
+func can_attack_now() -> bool:
+	return get_time_seconds() >= last_attack_time + get_attack_interval()
+
+func get_attack_interval() -> float:
+	return 1.0 / maxf(get_attack_speed(), 0.1)
+
+func get_attack_speed() -> float:
+	if q_timer > 0.0:
+		return attack_speed + q_attack_speed_bonus
+	return attack_speed
+
+func get_windup_time() -> float:
+	return maxf(0.07, attack_windup_time / get_attack_speed())
+
+func get_recovery_time() -> float:
+	return maxf(0.05, attack_recovery_time / get_attack_speed())
+
+func get_time_seconds() -> float:
+	return float(Time.get_ticks_msec()) / 1000.0
+
+func validate_target(target: Node2D) -> bool:
+	return target != null and is_instance_valid(target) and target.is_inside_tree()
+
+func move_toward_destination(destination: Vector2) -> void:
+	var to_destination: Vector2 = destination - global_position
+	if to_destination.length() <= stop_distance:
 		velocity = Vector2.ZERO
 		return
-	var to_t: Vector2 = target_position - global_position
-	if to_t.length() > 6.0:
-		facing_direction = to_t.normalized()
-		velocity = facing_direction * speed
-	else:
-		velocity = Vector2.ZERO
+	facing_direction = to_destination.normalized()
+	velocity = facing_direction * move_speed
 
-func enemy_at(p: Vector2) -> Node2D:
+func face_position(position: Vector2) -> void:
+	var direction: Vector2 = position - global_position
+	if direction.length() > 1.0:
+		facing_direction = direction.normalized()
+
+func find_enemy_under_point(point: Vector2) -> Node2D:
 	var best: Node2D = null
-	var best_d: float = 44.0
-	for n in get_tree().get_nodes_in_group("enemies"):
-		if n is Node2D and is_instance_valid(n):
-			var d: float = n.global_position.distance_to(p)
-			if d < best_d:
-				best = n
-				best_d = d
+	var best_distance: float = 46.0
+	for node in get_tree().get_nodes_in_group("enemies"):
+		if node is Node2D and is_instance_valid(node):
+			var enemy: Node2D = node
+			var distance: float = enemy.global_position.distance_to(point)
+			if distance < best_distance:
+				best = enemy
+				best_distance = distance
 	return best
 
-func enemy_for_attack_move(p: Vector2) -> Node2D:
-	var best: Node2D = null
-	var best_score: float = INF
-	for n in get_tree().get_nodes_in_group("enemies"):
-		if not (n is Node2D) or not is_instance_valid(n):
-			continue
-		var e: Node2D = n
-		if global_position.distance_to(e.global_position) > attack_range:
-			continue
-		var score: float = p.distance_to(e.global_position)
-		if score < best_score:
-			best = e
-			best_score = score
-	return best
+func select_attack_move_target(reference_point: Vector2) -> Node2D:
+	var candidates: Array[Node2D] = []
+	for node in get_tree().get_nodes_in_group("enemies"):
+		if node is Node2D and is_instance_valid(node):
+			var enemy: Node2D = node
+			if global_position.distance_to(enemy.global_position) <= attack_range:
+				candidates.append(enemy)
+
+	if candidates.is_empty():
+		return null
+
+	candidates.sort_custom(func(a: Node2D, b: Node2D) -> bool:
+		var cursor_a: float = reference_point.distance_to(a.global_position)
+		var cursor_b: float = reference_point.distance_to(b.global_position)
+		if not is_equal_approx(cursor_a, cursor_b):
+			return cursor_a < cursor_b
+
+		var player_a: float = global_position.distance_to(a.global_position)
+		var player_b: float = global_position.distance_to(b.global_position)
+		if not is_equal_approx(player_a, player_b):
+			return player_a < player_b
+
+		return get_enemy_hp(a) < get_enemy_hp(b)
+	)
+
+	return candidates[0]
+
+func get_enemy_hp(enemy: Node2D) -> int:
+	var value = enemy.get("hp")
+	if value == null:
+		return 999999
+	return int(value)
+
+func set_state(new_state: int) -> void:
+	if state == new_state:
+		return
+	previous_state = state
+	state = new_state
+	if OS.is_debug_build():
+		print("PlayerState -> ", get_state_name(state))
+
+func get_state_name(value: int) -> String:
+	match value:
+		PlayerState.IDLE:
+			return "IDLE"
+		PlayerState.MOVING:
+			return "MOVING"
+		PlayerState.CHASING_TARGET:
+			return "CHASING_TARGET"
+		PlayerState.ATTACK_WINDUP:
+			return "ATTACK_WINDUP"
+		PlayerState.ATTACK_RECOVERY:
+			return "ATTACK_RECOVERY"
+		PlayerState.ATTACK_MOVE:
+			return "ATTACK_MOVE"
+		PlayerState.HOLD:
+			return "HOLD"
+	return "UNKNOWN"
 
 func cast_q() -> void:
-	if q_cd_left > 0.0:
+	if q_cooldown_timer > 0.0:
 		return
-	q_left = q_duration
-	q_cd_left = q_cooldown
+	q_timer = q_duration
+	q_cooldown_timer = q_cooldown
 
 func cast_w() -> void:
-	if w_cd_left > 0.0 or arrow_scene == null:
+	if w_cooldown_timer > 0.0 or arrow_scene == null:
 		return
-	var dir: Vector2 = aim_dir()
-	facing_direction = dir
-	w_cd_left = w_cooldown
-	for i in range(5):
-		var angle: float = deg_to_rad(-21.0 + 10.5 * float(i))
-		spawn_arrow(global_position + dir.rotated(angle) * 24.0, dir.rotated(angle).normalized())
+	var base_direction: Vector2 = get_aim_direction()
+	facing_direction = base_direction
+	w_cooldown_timer = w_cooldown
+	var count: int = max(1, w_arrow_count)
+	var spread: float = deg_to_rad(w_spread_degrees)
+	var start_angle: float = -spread / 2.0
+	var step_angle: float = 0.0
+	if count > 1:
+		step_angle = spread / float(count - 1)
+	for i in range(count):
+		var dir: Vector2 = base_direction.rotated(start_angle + step_angle * float(i)).normalized()
+		spawn_arrow(global_position + dir * 24.0, dir)
 
 func cast_e() -> void:
-	if dodge_cd_left > 0.0:
+	if dodge_cooldown_timer > 0.0:
 		return
-	cancel_windup()
-	var dir: Vector2 = aim_dir()
-	dodge_dir = dir
-	facing_direction = dir
-	target_position = global_position + dir * 120.0
-	dodge_left = dodge_duration
-	dodge_cd_left = dodge_cooldown
-	invuln_left = 0.35
+	cancel_unfired_attack()
+	var direction: Vector2 = get_aim_direction()
+	dodge_direction = direction
+	facing_direction = direction
+	move_destination = global_position + direction * 120.0
+	dodge_timer = dodge_duration
+	dodge_cooldown_timer = dodge_cooldown
+	invincible_timer = invincible_duration
 
 func cast_r() -> void:
-	if r_cd_left > 0.0 or arrow_scene == null:
+	if r_cooldown_timer > 0.0 or arrow_scene == null:
 		return
-	var dir: Vector2 = aim_dir()
-	facing_direction = dir
-	r_cd_left = r_cooldown
-	spawn_arrow(global_position + dir * 32.0, dir, 95 + attack_bonus, 1250.0, 1.8, 3, Color(0.95, 1.0, 0.55), 7.0, 54.0)
+	var direction: Vector2 = get_aim_direction()
+	facing_direction = direction
+	r_cooldown_timer = r_cooldown
+	spawn_arrow(
+		global_position + direction * 32.0,
+		direction,
+		r_damage + attack_bonus,
+		r_projectile_speed,
+		r_projectile_lifetime,
+		r_pierce_count,
+		Color(0.95, 1.0, 0.55),
+		7.0,
+		54.0
+	)
 
-func current_aa_cd() -> float:
-	return q_attack_cooldown if q_left > 0.0 else attack_cooldown
-
-func current_windup() -> float:
-	return q_windup if q_left > 0.0 else attack_windup
-
-func aim_dir() -> Vector2:
-	var dir: Vector2 = get_global_mouse_position() - global_position
-	if dir.length() < 1.0:
+func get_aim_direction() -> Vector2:
+	var direction: Vector2 = get_global_mouse_position() - global_position
+	if direction.length() < 1.0:
 		return facing_direction
-	return dir.normalized()
+	return direction.normalized()
 
-func spawn_arrow(pos: Vector2, dir: Vector2, damage: int = -1, spd: float = -1.0, life: float = -1.0, pierce: int = -1, color: Color = Color(-1, -1, -1), width: float = -1.0, length: float = -1.0) -> void:
+func spawn_arrow(start_position: Vector2, shoot_direction: Vector2, custom_damage: int = -1, custom_speed: float = -1.0, custom_lifetime: float = -1.0, custom_pierce_count: int = -1, custom_color: Color = Color(-1, -1, -1), custom_width: float = -1.0, custom_length: float = -1.0) -> void:
 	var arrow: Node = arrow_scene.instantiate()
 	get_tree().current_scene.add_child(arrow)
 	if arrow.has_method("setup"):
-		arrow.setup(pos, dir, damage, spd, life, pierce, color, width, length)
+		arrow.setup(start_position, shoot_direction, custom_damage, custom_speed, custom_lifetime, custom_pierce_count, custom_color, custom_width, custom_length)
 
-func gain_exp(v: int) -> void:
+func gain_exp(amount: int) -> void:
 	if is_dead:
 		return
-	exp_current += v
+	exp_current += amount
 	while exp_current >= exp_to_next:
 		exp_current -= exp_to_next
 		level += 1
@@ -286,11 +509,11 @@ func gain_exp(v: int) -> void:
 	notify_stats_changed()
 	queue_redraw()
 
-func take_damage(v: int) -> void:
-	if is_dead or invuln_left > 0.0:
+func take_damage(amount: int) -> void:
+	if is_dead or invincible_timer > 0.0:
 		return
-	hp -= v
-	invuln_left = 0.25
+	hp -= amount
+	invincible_timer = 0.25
 	if hp <= 0:
 		hp = 0
 		is_dead = true
@@ -304,36 +527,46 @@ func full_heal() -> void:
 	queue_redraw()
 
 func get_hud_text() -> String:
-	return "LV %s  HP %s/%s  EXP %s/%s  ATK+%s" % [level, hp, max_hp, exp_current, exp_to_next, attack_bonus]
+	return "LV %s  HP %s/%s  EXP %s/%s  AS %.2f  STATE %s" % [level, hp, max_hp, exp_current, exp_to_next, get_attack_speed(), get_state_name(state)]
 
 func notify_stats_changed() -> void:
-	var gm: Node = get_tree().get_first_node_in_group("game_manager")
-	if gm != null and gm.has_signal("stats_changed"):
-		gm.stats_changed.emit()
+	var game_manager: Node = get_tree().get_first_node_in_group("game_manager")
+	if game_manager != null and game_manager.has_signal("stats_changed"):
+		game_manager.stats_changed.emit()
 
 func _draw() -> void:
-	var c: Color = Color(0.1, 0.35, 1.0)
+	var body_color: Color = Color(0.1, 0.35, 1.0)
 	if is_dead:
-		c = Color(0.25, 0.25, 0.25)
-	elif invuln_left > 0.0:
-		c = Color(0.3, 0.9, 1.0)
-	elif aa_windup_left > 0.0:
-		c = Color(0.8, 0.85, 1.0)
-	elif dodge_left > 0.0:
-		c = Color(0.2, 0.75, 1.0)
-	elif q_left > 0.0:
-		c = Color(0.45, 0.6, 1.0)
-	draw_circle(Vector2.ZERO, 16.0, c)
+		body_color = Color(0.25, 0.25, 0.25)
+	elif invincible_timer > 0.0:
+		body_color = Color(0.3, 0.9, 1.0)
+	elif state == PlayerState.ATTACK_WINDUP:
+		body_color = Color(0.85, 0.9, 1.0)
+	elif state == PlayerState.ATTACK_RECOVERY:
+		body_color = Color(0.65, 0.8, 1.0)
+	elif dodge_timer > 0.0:
+		body_color = Color(0.2, 0.75, 1.0)
+	elif q_timer > 0.0:
+		body_color = Color(0.45, 0.6, 1.0)
+
+	draw_circle(Vector2.ZERO, 16.0, body_color)
 	draw_line(Vector2.ZERO, facing_direction * 24.0, Color.WHITE, 3.0)
 	draw_arc(Vector2.ZERO, attack_range, 0.0, TAU, 96, Color(0.4, 0.65, 1.0, 0.12), 1.0)
-	if a_move_armed:
-		draw_string(ThemeDB.fallback_font, Vector2(-44, 62), "A-MOVE", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color(0.75, 0.9, 1.0))
+
+	if attack_move_armed:
+		draw_string(ThemeDB.fallback_font, Vector2(-45, 62), "A-MOVE", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color(0.75, 0.9, 1.0))
+	if hold_position:
+		draw_string(ThemeDB.fallback_font, Vector2(-32, 78), "HOLD", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color(1.0, 0.9, 0.55))
+
 	var hp_ratio: float = clampf(float(hp) / float(max_hp), 0.0, 1.0)
 	draw_rect(Rect2(Vector2(-27, -42), Vector2(54, 7)), Color(0.08, 0.04, 0.04))
 	draw_rect(Rect2(Vector2(-27, -42), Vector2(54 * hp_ratio, 7)), Color(0.1, 0.9, 0.25))
+
 	var exp_ratio: float = clampf(float(exp_current) / float(exp_to_next), 0.0, 1.0)
 	draw_rect(Rect2(Vector2(-32, -32), Vector2(64, 5)), Color(0.04, 0.08, 0.12))
 	draw_rect(Rect2(Vector2(-32, -32), Vector2(64 * exp_ratio, 5)), Color(0.2, 0.85, 1.0))
 	draw_string(ThemeDB.fallback_font, Vector2(-32, -48), "LV %s" % level, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 12, Color.WHITE)
+	draw_string(ThemeDB.fallback_font, Vector2(-58, 42), get_state_name(state), HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, Color.WHITE)
+
 	if is_dead:
 		draw_string(ThemeDB.fallback_font, Vector2(-58, -58), "DEAD - Press R", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 14, Color.WHITE)
