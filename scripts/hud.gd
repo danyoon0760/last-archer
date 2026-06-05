@@ -37,8 +37,8 @@ func build_ui() -> void:
 	add_child(status_label)
 
 	town_panel = PanelContainer.new()
-	town_panel.position = Vector2(24, 70)
-	town_panel.custom_minimum_size = Vector2(420, 260)
+	town_panel.position = Vector2(24, 90)
+	town_panel.custom_minimum_size = Vector2(450, 280)
 	add_child(town_panel)
 
 	town_label = Label.new()
@@ -53,11 +53,11 @@ func update_status() -> void:
 	if not is_instance_valid(player):
 		player = get_tree().get_first_node_in_group("player")
 
-	var player_text := ""
+	var player_text: String = ""
 	if is_instance_valid(player) and player.has_method("get_hud_text"):
 		player_text = player.get_hud_text()
 
-	var manager_text := ""
+	var manager_text: String = ""
 	if game_manager != null and game_manager.has_method("get_status_text"):
 		manager_text = game_manager.get_status_text()
 
@@ -72,14 +72,16 @@ func set_town_visible(is_open: bool) -> void:
 	update_status()
 
 func is_town_open() -> bool:
-	return game_manager != null and "town_open" in game_manager and game_manager.town_open
+	if game_manager == null:
+		return false
+	return bool(game_manager.get("town_open"))
 
 func get_town_text() -> String:
-	var gold_text := "0"
-	var gel_text := "0"
+	var gold_text: String = "0"
+	var gel_text: String = "0"
 	if game_manager != null:
-		gold_text = str(game_manager.gold)
-		gel_text = str(game_manager.slime_gel)
+		gold_text = str(game_manager.get("gold"))
+		gel_text = str(game_manager.get("slime_gel"))
 
 	return "[Lastwell - Temporary Town Menu]\n\n" + \
 		"H: Rest at inn / full heal\n" + \
