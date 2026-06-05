@@ -1,6 +1,8 @@
 extends Node2D
 
-@export var enemy_scene: PackedScene
+@export var slime_scene: PackedScene
+@export var rat_scene: PackedScene
+@export var heavy_slime_scene: PackedScene
 @export var spawn_radius: float = 520.0
 @export var delay_between_waves: float = 2.0
 @export var max_waves_before_loop: int = 999
@@ -43,10 +45,6 @@ func _physics_process(delta: float) -> void:
 		next_wave_timer = delay_between_waves
 
 func start_next_wave() -> void:
-	if enemy_scene == null:
-		push_warning("WaveSpawner has no enemy_scene assigned.")
-		return
-
 	wave += 1
 	if wave > max_waves_before_loop:
 		wave = 1
@@ -56,17 +54,43 @@ func start_next_wave() -> void:
 	if is_instance_valid(game_manager) and game_manager.has_method("set_wave"):
 		game_manager.set_wave(wave)
 
-	var enemy_count: int = get_enemy_count_for_wave(wave)
-	enemies_alive = enemy_count
+	var enemy_scenes: Array[PackedScene] = build_wave_enemy_list(wave)
+	enemies_alive = enemy_scenes.size()
 
-	for i in range(enemy_count):
-		spawn_enemy(i, enemy_count)
+	for i in range(enemy_scenes.size()):
+		spawn_enemy(enemy_scenes[i], i, enemy_scenes.size())
 
-func get_enemy_count_for_wave(value: int) -> int:
-	return min(3 + value * 2, 24)
+func build_wave_enemy_list(value: int) -> Array[PackedScene]:
+	var list: Array[PackedScene] = []
+	var slime_count: int = min(3 + value, 12)
+	var rat_count: int = 0
+	var heavy_count: int = 0
 
-func spawn_enemy(index: int, total: int) -> void:
-	var enemy: Node = enemy_scene.instantiate()
+	if value >= 2:
+		rat_count = min(value, 8)
+	if value >= 4:
+		heavy_count = min(1 + int(value / 4), 4)
+
+	for i in range(slime_count):
+		if slime_scene != null:
+			list.append(slime_scene)
+	for i in range(rat_count):
+		if rat_scene != null:
+			list.append(rat_scene)
+	for i in range(heavy_count):
+		if heavy_slime_scene != null:
+			list.append(heavy_slime_scene)
+
+	if list.is_empty() and slime_scene != null:
+		list.append(slime_scene)
+
+	list.shuffle()
+	return list
+
+func spawn_enemy(scene: PackedScene, index: int, total: int) -> void:
+	if scene == null:
+		return
+	var enemy: Node = scene.instantiate()
 
 	var center: Vector2 = Vector2(640, 360)
 	if is_instance_valid(player):
