@@ -2,10 +2,10 @@ extends CharacterBody2D
 
 @export var max_hp: int = 100
 @export var move_speed: float = 135.0
-@export var chase_range: float = 520.0
-@export var attack_range: float = 34.0
+@export var chase_range: float = 620.0
+@export var attack_range: float = 72.0
 @export var attack_damage: int = 12
-@export var attack_cooldown: float = 0.8
+@export var attack_cooldown: float = 0.65
 
 var hp: int
 var attack_timer: float = 0.0
@@ -13,12 +13,15 @@ var player: Node2D
 
 func _ready() -> void:
 	hp = max_hp
-	player = get_tree().get_first_node_in_group("player") as Node2D
+	find_player()
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
 	if attack_timer > 0.0:
 		attack_timer = maxf(attack_timer - delta, 0.0)
+
+	if not is_instance_valid(player):
+		find_player()
 
 	if not is_instance_valid(player):
 		velocity = Vector2.ZERO
@@ -40,6 +43,9 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	queue_redraw()
 
+func find_player() -> void:
+	player = get_tree().get_first_node_in_group("player") as Node2D
+
 func try_attack_player() -> void:
 	if attack_timer > 0.0:
 		return
@@ -56,6 +62,9 @@ func take_damage(amount: int) -> void:
 func _draw() -> void:
 	# Temporary enemy placeholder.
 	draw_circle(Vector2.ZERO, 18.0, Color(0.9, 0.15, 0.12))
+
+	# Attack range circle while prototyping.
+	draw_arc(Vector2.ZERO, attack_range, 0.0, TAU, 36, Color(1.0, 0.35, 0.35, 0.35), 1.5)
 
 	# Small direction/aggro marker.
 	if is_instance_valid(player):
