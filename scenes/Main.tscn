@@ -1,20 +1,19 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://dvjp6ew252dwy"]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1_player_scene"]
-[ext_resource type="Script" path="res://scripts/main.gd" id="2_main_script"]
+[ext_resource type="Script" uid="uid://cxoatu0gnkper" path="res://scripts/main.gd" id="2_main_script"]
 [ext_resource type="PackedScene" path="res://scenes/EnemyDummy.tscn" id="3_enemy_dummy_scene"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=1054063812]
 script = ExtResource("2_main_script")
 
-[node name="Player" parent="." instance=ExtResource("1_player_scene")]
-position = Vector2(640, 360)
+[node name="Player" parent="." unique_id=1650225725 instance=ExtResource("1_player_scene")]
 
-[node name="EnemyDummy" parent="." instance=ExtResource("3_enemy_dummy_scene")]
+[node name="EnemyDummy" parent="." unique_id=219943259 instance=ExtResource("3_enemy_dummy_scene")]
 position = Vector2(900, 360)
 
-[node name="EnemyDummy2" parent="." instance=ExtResource("3_enemy_dummy_scene")]
+[node name="EnemyDummy2" parent="." unique_id=1433742261 instance=ExtResource("3_enemy_dummy_scene")]
 position = Vector2(900, 520)
 
-[node name="EnemyDummy3" parent="." instance=ExtResource("3_enemy_dummy_scene")]
+[node name="EnemyDummy3" parent="." unique_id=1607854794 instance=ExtResource("3_enemy_dummy_scene")]
 position = Vector2(1040, 300)
