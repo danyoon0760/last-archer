@@ -11,6 +11,14 @@ position = Vector2(640, 360)
 collision_layer = 1
 collision_mask = 2
 script = ExtResource("1_player_lol_script")
+move_speed = 460.0
+attack_range = 430.0
+attack_speed = 1.25
+attack_windup_time = 0.15
+attack_recovery_time = 0.04
+projectile_speed = 1350.0
+projectile_lifetime = 1.1
+q_attack_speed_bonus = 1.1
 arrow_scene = ExtResource("2_arrow_scene")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
