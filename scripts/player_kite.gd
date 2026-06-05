@@ -3,7 +3,7 @@ extends CharacterBody2D
 enum S {IDLE,MOVE,CHASE,WINDUP,RECOVER,AMOVE,HOLD}
 
 @export var move_speed := 400.0
-@export var max_hp := 100
+@export var max_hp := 160
 @export var attack_range := 430.0
 @export var attack_speed := 1.25
 @export var windup_ratio := 0.20
@@ -26,7 +26,7 @@ var holding := false
 var last_shot := -999.0
 var t := 0.0
 var fired := false
-var hp := 100
+var hp := 160
 var level := 1
 var exp_current := 0
 var exp_to_next := 10
@@ -58,7 +58,10 @@ func _unhandled_input(e):
 
 func _physics_process(d):
 	q=maxf(q-d,0); q_cd=maxf(q_cd-d,0); inv=maxf(inv-d,0)
-	if is_dead: velocity=Vector2.ZERO; return
+	if is_dead:
+		velocity=Vector2.ZERO
+		queue_redraw()
+		return
 	match state:
 		S.IDLE: velocity=Vector2.ZERO
 		S.MOVE: move_to(dest); if global_position.distance_to(dest)<6: set_s(S.IDLE)
@@ -98,12 +101,14 @@ func chase():
 
 func amove():
 	var en=pick(amove_dest)
-	if en:
-		target=en; face(target.global_position); velocity=Vector2.ZERO
-		if ready(): start(target)
-		return
+	if en and ready():
+		target=en; face(target.global_position); velocity=Vector2.ZERO; start(target); return
 	move_to(amove_dest)
-	if global_position.distance_to(amove_dest)<6: set_s(S.IDLE)
+	if global_position.distance_to(amove_dest)<6:
+		if en:
+			velocity=Vector2.ZERO
+		else:
+			set_s(S.IDLE)
 
 func hold_logic():
 	velocity=Vector2.ZERO
@@ -192,18 +197,22 @@ func gain_exp(v):
 
 func take_damage(v):
 	if inv>0 or is_dead: return
-	hp-=v; inv=0.25
+	hp-=v; inv=0.45
 	if hp<=0: hp=0; is_dead=true
-	notify_stats_changed()
+	notify_stats_changed(); queue_redraw()
 
-func full_heal(): hp=max_hp; notify_stats_changed()
+func full_heal(): hp=max_hp; is_dead=false; notify_stats_changed(); queue_redraw()
 func get_hud_text(): return "LV %s HP %s/%s EXP %s/%s AS %.2f %s" %[level,hp,max_hp,exp_current,exp_to_next,aspeed(),name_s()]
 func notify_stats_changed(): var gm=get_tree().get_first_node_in_group("game_manager"); if gm and gm.has_signal("stats_changed"): gm.stats_changed.emit()
 func set_s(s): state=s
 func name_s(): return ["IDLE","MOVE","CHASE","WINDUP","RECOVER","AMOVE","HOLD"][state]
 
 func _draw():
-	draw_circle(Vector2.ZERO,16,Color(0.1,0.35,1.0))
+	var c=Color(0.1,0.35,1.0)
+	if is_dead: c=Color(0.25,0.25,0.25)
+	draw_circle(Vector2.ZERO,16,c)
 	draw_line(Vector2.ZERO,dir*24,Color.WHITE,3)
 	draw_arc(Vector2.ZERO,attack_range,0,TAU,96,Color(0.4,0.65,1.0,0.12),1)
 	draw_string(ThemeDB.fallback_font,Vector2(-42,42),name_s(),HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color.WHITE)
+	if is_dead:
+		draw_string(ThemeDB.fallback_font,Vector2(-64,-56),"DEAD - R",HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color.WHITE)
