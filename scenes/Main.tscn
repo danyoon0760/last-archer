@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main_script"]
-[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2_player_scene"]
+[ext_resource type="PackedScene" path="res://scenes/PlayerLOL.tscn" id="2_player_scene"]
 [ext_resource type="Script" path="res://scripts/game_manager.gd" id="3_game_manager_script"]
 [ext_resource type="Script" path="res://scripts/wave_spawner.gd" id="4_wave_spawner_script"]
 [ext_resource type="PackedScene" path="res://scenes/EnemyDummy.tscn" id="5_enemy_dummy_scene"]
