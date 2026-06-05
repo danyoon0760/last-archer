@@ -230,7 +230,6 @@ func process_chasing_target() -> void:
 			velocity = Vector2.ZERO
 			start_attack_windup(current_target)
 		else:
-			# Direct target attack behaves like LoL: once in range, wait for the next shot unless the player gives a move command.
 			velocity = Vector2.ZERO
 		return
 
@@ -247,8 +246,6 @@ func process_attack_move() -> void:
 		start_attack_windup(current_target)
 		return
 
-	# Important kiting rule: during attack cooldown, attack-move must not freeze the character.
-	# Keep moving toward the attack-move point until the next attack is available.
 	move_toward_destination(attack_move_point)
 	if global_position.distance_to(attack_move_point) <= stop_distance:
 		velocity = Vector2.ZERO
@@ -279,7 +276,7 @@ func process_attack_windup(delta: float) -> void:
 	attack_phase_timer += delta
 
 	if not validate_target(current_target):
-		cancel_unfired_attack()
+		handle_lost_target_during_attack()
 		return
 
 	var target_distance: float = global_position.distance_to(current_target.global_position)
@@ -304,11 +301,24 @@ func process_attack_recovery(delta: float) -> void:
 		if hold_position or resume_state_after_attack == PlayerState.HOLD:
 			set_state(PlayerState.HOLD)
 		elif resume_state_after_attack == PlayerState.ATTACK_MOVE:
+			current_target = null
 			set_state(PlayerState.ATTACK_MOVE)
 		elif validate_target(current_target):
 			set_state(PlayerState.CHASING_TARGET)
 		else:
+			current_target = null
 			set_state(PlayerState.IDLE)
+
+func handle_lost_target_during_attack() -> void:
+	cancel_unfired_attack()
+	current_target = null
+	attack_phase_timer = 0.0
+	if hold_position or resume_state_after_attack == PlayerState.HOLD:
+		set_state(PlayerState.HOLD)
+	elif resume_state_after_attack == PlayerState.ATTACK_MOVE:
+		set_state(PlayerState.ATTACK_MOVE)
+	else:
+		set_state(PlayerState.IDLE)
 
 func fire_basic_attack() -> void:
 	if arrow_scene == null or not validate_target(current_target):
@@ -353,8 +363,15 @@ func get_recovery_time() -> float:
 func get_time_seconds() -> float:
 	return float(Time.get_ticks_msec()) / 1000.0
 
-func validate_target(target: Node2D) -> bool:
-	return target != null and is_instance_valid(target) and target.is_inside_tree()
+func validate_target(target: Variant) -> bool:
+	if target == null:
+		return false
+	if not (target is Node2D):
+		return false
+	if not is_instance_valid(target):
+		return false
+	var target_node: Node2D = target as Node2D
+	return target_node.is_inside_tree()
 
 func move_toward_destination(destination: Vector2) -> void:
 	var to_destination: Vector2 = destination - global_position
@@ -364,8 +381,8 @@ func move_toward_destination(destination: Vector2) -> void:
 	facing_direction = to_destination.normalized()
 	velocity = facing_direction * move_speed
 
-func face_position(position: Vector2) -> void:
-	var direction: Vector2 = position - global_position
+func face_position(target_position: Vector2) -> void:
+	var direction: Vector2 = target_position - global_position
 	if direction.length() > 1.0:
 		facing_direction = direction.normalized()
 
@@ -409,6 +426,8 @@ func select_attack_move_target(reference_point: Vector2) -> Node2D:
 	return candidates[0]
 
 func get_enemy_hp(enemy: Node2D) -> int:
+	if not is_instance_valid(enemy):
+		return 999999
 	var value = enemy.get("hp")
 	if value == null:
 		return 999999
