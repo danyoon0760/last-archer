@@ -11,13 +11,23 @@ var waiting_for_next_wave: bool = false
 var next_wave_timer: float = 1.0
 var player: Node2D
 var game_manager: Node
+var has_started: bool = false
 
 func _ready() -> void:
 	player = get_tree().get_first_node_in_group("player") as Node2D
 	game_manager = get_tree().get_first_node_in_group("game_manager")
+	call_deferred("start_first_wave")
+
+func start_first_wave() -> void:
+	if has_started:
+		return
+	has_started = true
 	start_next_wave()
 
 func _physics_process(delta: float) -> void:
+	if not has_started:
+		return
+
 	if not is_instance_valid(player):
 		player = get_tree().get_first_node_in_group("player") as Node2D
 
@@ -41,6 +51,8 @@ func start_next_wave() -> void:
 	if wave > max_waves_before_loop:
 		wave = 1
 
+	if not is_instance_valid(game_manager):
+		game_manager = get_tree().get_first_node_in_group("game_manager")
 	if is_instance_valid(game_manager) and game_manager.has_method("set_wave"):
 		game_manager.set_wave(wave)
 
@@ -55,7 +67,6 @@ func get_enemy_count_for_wave(value: int) -> int:
 
 func spawn_enemy(index: int, total: int) -> void:
 	var enemy: Node = enemy_scene.instantiate()
-	get_tree().current_scene.add_child(enemy)
 
 	var center: Vector2 = Vector2(640, 360)
 	if is_instance_valid(player):
@@ -63,10 +74,17 @@ func spawn_enemy(index: int, total: int) -> void:
 
 	var angle: float = TAU * float(index) / max(1.0, float(total)) + randf_range(-0.35, 0.35)
 	var distance: float = randf_range(spawn_radius * 0.65, spawn_radius)
-	enemy.global_position = center + Vector2.RIGHT.rotated(angle) * distance
+	var spawn_position: Vector2 = center + Vector2.RIGHT.rotated(angle) * distance
+	if enemy is Node2D:
+		enemy.global_position = spawn_position
 
 	if enemy.has_signal("defeated"):
 		enemy.defeated.connect(_on_enemy_defeated)
+
+	var parent: Node = get_tree().current_scene
+	if parent == null:
+		parent = self
+	parent.add_child.call_deferred(enemy)
 
 func _on_enemy_defeated() -> void:
 	enemies_alive = max(enemies_alive - 1, 0)
