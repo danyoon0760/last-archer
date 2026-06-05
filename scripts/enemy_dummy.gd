@@ -12,6 +12,9 @@ signal defeated
 @export var exp_orb_count: int = 3
 @export var gold_reward: int = 2
 @export var slime_gel_reward: int = 1
+@export var body_radius: float = 18.0
+@export var body_color: Color = Color(0.9, 0.15, 0.12)
+@export var hp_bar_width: float = 44.0
 
 var hp: int
 var attack_timer: float = 0.0
@@ -108,17 +111,16 @@ func spawn_exp_orbs() -> void:
 			orb.call_deferred("setup", global_position, direction, strength, 1)
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 18.0, Color(0.9, 0.15, 0.12))
+	draw_circle(Vector2.ZERO, body_radius, body_color)
 	draw_arc(Vector2.ZERO, attack_range, 0.0, TAU, 36, Color(1.0, 0.35, 0.35, 0.35), 1.5)
 
 	if is_instance_valid(player):
 		var to_player: Vector2 = player.global_position - global_position
 		if to_player.length() <= chase_range:
-			draw_line(Vector2.ZERO, to_player.normalized() * 22.0, Color(1.0, 0.7, 0.7), 2.0)
+			draw_line(Vector2.ZERO, to_player.normalized() * (body_radius + 4.0), Color(1.0, 0.7, 0.7), 2.0)
 
-	var bar_width: float = 44.0
 	var bar_height: float = 6.0
 	var hp_ratio: float = clampf(float(hp) / float(max_hp), 0.0, 1.0)
-	var bar_pos: Vector2 = Vector2(-bar_width / 2.0, -34.0)
-	draw_rect(Rect2(bar_pos, Vector2(bar_width, bar_height)), Color(0.12, 0.05, 0.05))
-	draw_rect(Rect2(bar_pos, Vector2(bar_width * hp_ratio, bar_height)), Color(0.1, 0.9, 0.25))
+	var bar_pos: Vector2 = Vector2(-hp_bar_width / 2.0, -body_radius - 16.0)
+	draw_rect(Rect2(bar_pos, Vector2(hp_bar_width, bar_height)), Color(0.12, 0.05, 0.05))
+	draw_rect(Rect2(bar_pos, Vector2(hp_bar_width * hp_ratio, bar_height)), Color(0.1, 0.9, 0.25))
