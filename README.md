@@ -2,11 +2,15 @@
 
 A small Godot 4 top-down archer action RPG prototype.
 
-Current prototype goal:
+Current prototype features:
 
 - Right-click movement
-- Simple player placeholder
-- Later: bow attack, enemy dummy, dodge roll, Q/W/E/R skills
+- Left-click bow shooting
+- Enemy dummies with HP bars
+- Enemies chase the player and deal melee damage
+- Player HP bar
+- E key dodge roll / dash
+- R key restart after death
 
 ## How to open
 
@@ -17,3 +21,6 @@ Current prototype goal:
 ## Current controls
 
 - Right Mouse Button: move to cursor position
+- Left Mouse Button: shoot arrow toward cursor
+- E: dodge roll / dash toward cursor
+- R: restart after death
