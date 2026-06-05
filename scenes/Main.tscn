@@ -1,19 +1,24 @@
-[gd_scene format=3 uid="uid://dvjp6ew252dwy"]
+[gd_scene load_steps=6 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1_player_scene"]
-[ext_resource type="Script" uid="uid://cxoatu0gnkper" path="res://scripts/main.gd" id="2_main_script"]
-[ext_resource type="PackedScene" path="res://scenes/EnemyDummy.tscn" id="3_enemy_dummy_scene"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main_script"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="2_player_scene"]
+[ext_resource type="Script" path="res://scripts/game_manager.gd" id="3_game_manager_script"]
+[ext_resource type="Script" path="res://scripts/wave_spawner.gd" id="4_wave_spawner_script"]
+[ext_resource type="PackedScene" path="res://scenes/EnemyDummy.tscn" id="5_enemy_dummy_scene"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="6_hud_script"]
 
-[node name="Main" type="Node2D" unique_id=1054063812]
-script = ExtResource("2_main_script")
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main_script")
 
-[node name="Player" parent="." unique_id=1650225725 instance=ExtResource("1_player_scene")]
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("3_game_manager_script")
 
-[node name="EnemyDummy" parent="." unique_id=219943259 instance=ExtResource("3_enemy_dummy_scene")]
-position = Vector2(900, 360)
+[node name="Player" parent="." instance=ExtResource("2_player_scene")]
+position = Vector2(640, 360)
 
-[node name="EnemyDummy2" parent="." unique_id=1433742261 instance=ExtResource("3_enemy_dummy_scene")]
-position = Vector2(900, 520)
+[node name="WaveSpawner" type="Node2D" parent="."]
+script = ExtResource("4_wave_spawner_script")
+enemy_scene = ExtResource("5_enemy_dummy_scene")
 
-[node name="EnemyDummy3" parent="." unique_id=1607854794 instance=ExtResource("3_enemy_dummy_scene")]
-position = Vector2(1040, 300)
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("6_hud_script")
