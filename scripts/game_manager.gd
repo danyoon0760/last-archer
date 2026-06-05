@@ -22,7 +22,7 @@ func reset_run() -> void:
 	stats_changed.emit()
 	wave_changed.emit()
 
-func add_kill_rewards(gold_amount: int, slime_gel_amount: int) -> void:
+func add_defeat_rewards(gold_amount: int, slime_gel_amount: int) -> void:
 	gold += gold_amount
 	slime_gel += slime_gel_amount
 	stats_changed.emit()
@@ -45,6 +45,7 @@ func heal_player() -> void:
 	var player := get_tree().get_first_node_in_group("player")
 	if player != null and player.has_method("full_heal"):
 		player.full_heal()
+	stats_changed.emit()
 
 func sell_slime_gel() -> void:
 	if slime_gel <= 0:
