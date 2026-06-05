@@ -65,7 +65,7 @@ func _physics_process(d):
 		S.CHASE: chase()
 		S.AMOVE: amove()
 		S.HOLD: hold_logic()
-		S.WINDUP: windup(d)
+		S.WINDUP: attack_windup(d)
 		S.RECOVER: recover(d)
 	move_and_slide(); queue_redraw()
 
@@ -116,13 +116,13 @@ func start(en):
 	if arrow_scene==null: return
 	resume=state; target=en; t=0; fired=false; velocity=Vector2.ZERO; set_s(S.WINDUP)
 
-func windup(d):
+func attack_windup(d):
 	velocity=Vector2.ZERO; t+=d
 	if not valid(target): lost(); return
 	if global_position.distance_to(target.global_position)>attack_range:
 		cancel(); set_s(S.CHASE); return
 	face(target.global_position)
-	if t>=windup():
+	if t>=windup_time():
 		shoot(); fired=true; last_shot=now(); t=0; set_s(S.RECOVER)
 
 func recover(d):
@@ -162,7 +162,7 @@ func face(p):
 func ready(): return now()>=last_shot+interval()
 func interval(): return 1.0/maxf(aspeed(),0.1)
 func aspeed(): return attack_speed+(0.7 if q>0 else 0.0)
-func windup(): return maxf(min_windup,interval()*windup_ratio)
+func windup_time(): return maxf(min_windup,interval()*windup_ratio)
 func now(): return Time.get_ticks_msec()/1000.0
 func valid(x): return x!=null and is_instance_valid(x) and x is Node2D and (x as Node2D).is_inside_tree()
 
