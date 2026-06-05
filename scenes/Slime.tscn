@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy_dummy.gd" id="1_enemy_script"]
+[ext_resource type="PackedScene" path="res://scenes/ExperienceOrb.tscn" id="2_exp_orb_scene"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_slime"]
+radius = 18.0
+
+[node name="Slime" type="CharacterBody2D" groups=["enemies"]]
+script = ExtResource("1_enemy_script")
+collision_layer = 2
+collision_mask = 0
+max_hp = 75
+move_speed = 120.0
+attack_range = 62.0
+attack_damage = 9
+attack_cooldown = 0.8
+exp_orb_scene = ExtResource("2_exp_orb_scene")
+exp_orb_count = 3
+gold_reward = 2
+slime_gel_reward = 1
+body_radius = 18.0
+body_color = Color(0.2, 0.85, 0.35, 1)
+hp_bar_width = 42.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_slime")
