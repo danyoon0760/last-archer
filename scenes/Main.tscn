@@ -1,28 +1,31 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main_script"]
-[ext_resource type="PackedScene" path="res://scenes/PlayerLOL.tscn" id="2_player_scene"]
-[ext_resource type="Script" path="res://scripts/game_manager.gd" id="3_game_manager_script"]
-[ext_resource type="Script" path="res://scripts/wave_spawner.gd" id="4_wave_spawner_script"]
-[ext_resource type="PackedScene" path="res://scenes/Slime.tscn" id="5_slime_scene"]
-[ext_resource type="PackedScene" path="res://scenes/Rat.tscn" id="6_rat_scene"]
-[ext_resource type="PackedScene" path="res://scenes/HeavySlime.tscn" id="7_heavy_slime_scene"]
-[ext_resource type="Script" path="res://scripts/hud.gd" id="8_hud_script"]
+[ext_resource type="PackedScene" path="res://scenes/TestMap.tscn" id="2_test_map_scene"]
+[ext_resource type="PackedScene" path="res://scenes/PlayerLOL.tscn" id="3_player_scene"]
+[ext_resource type="Script" path="res://scripts/game_manager.gd" id="4_game_manager_script"]
+[ext_resource type="Script" path="res://scripts/wave_spawner.gd" id="5_wave_spawner_script"]
+[ext_resource type="PackedScene" path="res://scenes/Slime.tscn" id="6_slime_scene"]
+[ext_resource type="PackedScene" path="res://scenes/Rat.tscn" id="7_rat_scene"]
+[ext_resource type="PackedScene" path="res://scenes/HeavySlime.tscn" id="8_heavy_slime_scene"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="9_hud_script"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main_script")
 
-[node name="GameManager" type="Node" parent="."]
-script = ExtResource("3_game_manager_script")
+[node name="TestMap" parent="." instance=ExtResource("2_test_map_scene")]
 
-[node name="Player" parent="." instance=ExtResource("2_player_scene")]
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("4_game_manager_script")
+
+[node name="Player" parent="." instance=ExtResource("3_player_scene")]
 position = Vector2(640, 360)
 
 [node name="WaveSpawner" type="Node2D" parent="."]
-script = ExtResource("4_wave_spawner_script")
-slime_scene = ExtResource("5_slime_scene")
-rat_scene = ExtResource("6_rat_scene")
-heavy_slime_scene = ExtResource("7_heavy_slime_scene")
+script = ExtResource("5_wave_spawner_script")
+slime_scene = ExtResource("6_slime_scene")
+rat_scene = ExtResource("7_rat_scene")
+heavy_slime_scene = ExtResource("8_heavy_slime_scene")
 
 [node name="HUD" type="CanvasLayer" parent="."]
-script = ExtResource("8_hud_script")
+script = ExtResource("9_hud_script")
