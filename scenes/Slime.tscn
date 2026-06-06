@@ -9,7 +9,7 @@ radius = 18.0
 [node name="Slime" type="CharacterBody2D" groups=["enemies"]]
 script = ExtResource("1_enemy_script")
 collision_layer = 2
-collision_mask = 0
+collision_mask = 4
 max_hp = 75
 move_speed = 120.0
 attack_range = 62.0
