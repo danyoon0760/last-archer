@@ -69,7 +69,7 @@ func build_wave_enemy_list(value: int) -> Array[PackedScene]:
 	if value >= 2:
 		rat_count = min(value, 8)
 	if value >= 4:
-		heavy_count = min(1 + int(value / 4), 4)
+		heavy_count = min(1 + int(float(value) / 4.0), 4)
 
 	for i in range(slime_count):
 		if slime_scene != null:
