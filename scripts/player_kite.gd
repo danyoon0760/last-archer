@@ -35,8 +35,8 @@ enum S {IDLE, MOVE, CHASE, WINDUP, RECOVER, AMOVE, HOLD}
 @export var r_projectile_lifetime := 1.5
 @export var r_pierce_count := 3
 
-var state := S.IDLE
-var resume := S.IDLE
+var state: S = S.IDLE
+var resume: S = S.IDLE
 var dest := Vector2.ZERO
 var amove_dest := Vector2.ZERO
 var dir := Vector2.RIGHT
@@ -463,7 +463,7 @@ func notify_stats_changed() -> void:
 	if gm != null and gm.has_signal("stats_changed"):
 		gm.stats_changed.emit()
 
-func set_s(s: int) -> void:
+func set_s(s: S) -> void:
 	state = s
 
 func name_s() -> String:
