@@ -37,13 +37,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			if game_manager.has_method("sell_slime_gel"):
 				game_manager.sell_slime_gel()
 
+func make_click_through(control: Control) -> void:
+	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 func build_ui() -> void:
 	status_panel = PanelContainer.new()
 	status_panel.position = Vector2(16, 14)
 	status_panel.custom_minimum_size = Vector2(420, 92)
+	make_click_through(status_panel)
 	add_child(status_panel)
 
 	var margin := MarginContainer.new()
+	make_click_through(margin)
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_top", 8)
 	margin.add_theme_constant_override("margin_right", 12)
@@ -51,6 +56,7 @@ func build_ui() -> void:
 	status_panel.add_child(margin)
 
 	status_label = Label.new()
+	make_click_through(status_label)
 	status_label.add_theme_color_override("font_color", Color.WHITE)
 	status_label.add_theme_font_size_override("font_size", 17)
 	margin.add_child(status_label)
@@ -58,9 +64,11 @@ func build_ui() -> void:
 	skill_panel = PanelContainer.new()
 	skill_panel.position = Vector2(350, 615)
 	skill_panel.custom_minimum_size = Vector2(580, 82)
+	make_click_through(skill_panel)
 	add_child(skill_panel)
 
 	var skill_margin := MarginContainer.new()
+	make_click_through(skill_margin)
 	skill_margin.add_theme_constant_override("margin_left", 12)
 	skill_margin.add_theme_constant_override("margin_top", 10)
 	skill_margin.add_theme_constant_override("margin_right", 12)
@@ -68,15 +76,18 @@ func build_ui() -> void:
 	skill_panel.add_child(skill_margin)
 
 	skill_box = HBoxContainer.new()
+	make_click_through(skill_box)
 	skill_box.add_theme_constant_override("separation", 10)
 	skill_margin.add_child(skill_box)
 
 	for key in ["Q", "W", "E", "R"]:
 		var box := PanelContainer.new()
+		make_click_through(box)
 		box.custom_minimum_size = Vector2(132, 58)
 		skill_box.add_child(box)
 
 		var inner := MarginContainer.new()
+		make_click_through(inner)
 		inner.add_theme_constant_override("margin_left", 8)
 		inner.add_theme_constant_override("margin_top", 6)
 		inner.add_theme_constant_override("margin_right", 8)
@@ -84,12 +95,14 @@ func build_ui() -> void:
 		box.add_child(inner)
 
 		var label := Label.new()
+		make_click_through(label)
 		label.add_theme_color_override("font_color", Color.WHITE)
 		label.add_theme_font_size_override("font_size", 15)
 		inner.add_child(label)
 		skill_labels[key] = label
 
 	death_label = Label.new()
+	make_click_through(death_label)
 	death_label.position = Vector2(505, 310)
 	death_label.add_theme_font_size_override("font_size", 34)
 	death_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
@@ -101,9 +114,11 @@ func build_ui() -> void:
 	town_panel = PanelContainer.new()
 	town_panel.position = Vector2(24, 115)
 	town_panel.custom_minimum_size = Vector2(450, 280)
+	make_click_through(town_panel)
 	add_child(town_panel)
 
 	town_label = Label.new()
+	make_click_through(town_label)
 	town_label.add_theme_font_size_override("font_size", 18)
 	town_label.add_theme_color_override("font_color", Color.WHITE)
 	town_label.text = get_town_text()
