@@ -9,7 +9,7 @@ size = Vector2(32, 32)
 [node name="Player" type="CharacterBody2D"]
 position = Vector2(640, 360)
 collision_layer = 1
-collision_mask = 0
+collision_mask = 4
 script = ExtResource("1_player_kite_script")
 arrow_scene = ExtResource("2_arrow_scene")
 click_radius = 70.0
