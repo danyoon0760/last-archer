@@ -1,0 +1,176 @@
+[gd_scene load_steps=12 format=3]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_top_bottom"]
+size = Vector2(1920, 64)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_left_right"]
+size = Vector2(64, 1200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar_big"]
+size = Vector2(120, 120)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar_tall"]
+size = Vector2(90, 190)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar_wide"]
+size = Vector2(190, 90)
+
+[node name="TestMap" type="Node2D"]
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.055, 0.065, 0.085, 1)
+polygon = PackedVector2Array(-384, -224, 1664, -224, 1664, 944, -384, 944)
+
+[node name="FloorInner" type="Polygon2D" parent="."]
+color = Color(0.085, 0.095, 0.125, 1)
+polygon = PackedVector2Array(-256, -128, 1536, -128, 1536, 848, -256, 848)
+
+[node name="GridLineH1" type="Line2D" parent="."]
+points = PackedVector2Array(-256, 160, 1536, 160)
+width = 2.0
+default_color = Color(0.15, 0.17, 0.22, 0.45)
+
+[node name="GridLineH2" type="Line2D" parent="."]
+points = PackedVector2Array(-256, 360, 1536, 360)
+width = 2.0
+default_color = Color(0.15, 0.17, 0.22, 0.45)
+
+[node name="GridLineH3" type="Line2D" parent="."]
+points = PackedVector2Array(-256, 560, 1536, 560)
+width = 2.0
+default_color = Color(0.15, 0.17, 0.22, 0.45)
+
+[node name="GridLineV1" type="Line2D" parent="."]
+points = PackedVector2Array(160, -128, 160, 848)
+width = 2.0
+default_color = Color(0.15, 0.17, 0.22, 0.45)
+
+[node name="GridLineV2" type="Line2D" parent="."]
+points = PackedVector2Array(640, -128, 640, 848)
+width = 2.0
+default_color = Color(0.15, 0.17, 0.22, 0.45)
+
+[node name="GridLineV3" type="Line2D" parent="."]
+points = PackedVector2Array(1120, -128, 1120, 848)
+width = 2.0
+default_color = Color(0.15, 0.17, 0.22, 0.45)
+
+[node name="TopWall" type="StaticBody2D" parent="."]
+position = Vector2(640, -160)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="TopWall"]
+color = Color(0.18, 0.19, 0.24, 1)
+polygon = PackedVector2Array(-960, -32, 960, -32, 960, 32, -960, 32)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TopWall"]
+shape = SubResource("RectangleShape2D_top_bottom")
+
+[node name="BottomWall" type="StaticBody2D" parent="."]
+position = Vector2(640, 880)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="BottomWall"]
+color = Color(0.18, 0.19, 0.24, 1)
+polygon = PackedVector2Array(-960, -32, 960, -32, 960, 32, -960, 32)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BottomWall"]
+shape = SubResource("RectangleShape2D_top_bottom")
+
+[node name="LeftWall" type="StaticBody2D" parent="."]
+position = Vector2(-320, 360)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="LeftWall"]
+color = Color(0.18, 0.19, 0.24, 1)
+polygon = PackedVector2Array(-32, -600, 32, -600, 32, 600, -32, 600)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftWall"]
+shape = SubResource("RectangleShape2D_left_right")
+
+[node name="RightWall" type="StaticBody2D" parent="."]
+position = Vector2(1600, 360)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="RightWall"]
+color = Color(0.18, 0.19, 0.24, 1)
+polygon = PackedVector2Array(-32, -600, 32, -600, 32, 600, -32, 600)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall"]
+shape = SubResource("RectangleShape2D_left_right")
+
+[node name="Pillar_A" type="StaticBody2D" parent="."]
+position = Vector2(260, 170)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Pillar_A"]
+color = Color(0.20, 0.21, 0.27, 1)
+polygon = PackedVector2Array(-60, -60, 60, -60, 60, 60, -60, 60)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillar_A"]
+shape = SubResource("RectangleShape2D_pillar_big")
+
+[node name="Pillar_B" type="StaticBody2D" parent="."]
+position = Vector2(1020, 170)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Pillar_B"]
+color = Color(0.20, 0.21, 0.27, 1)
+polygon = PackedVector2Array(-60, -60, 60, -60, 60, 60, -60, 60)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillar_B"]
+shape = SubResource("RectangleShape2D_pillar_big")
+
+[node name="Pillar_C" type="StaticBody2D" parent="."]
+position = Vector2(260, 650)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Pillar_C"]
+color = Color(0.20, 0.21, 0.27, 1)
+polygon = PackedVector2Array(-60, -60, 60, -60, 60, 60, -60, 60)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillar_C"]
+shape = SubResource("RectangleShape2D_pillar_big")
+
+[node name="Pillar_D" type="StaticBody2D" parent="."]
+position = Vector2(1020, 650)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Pillar_D"]
+color = Color(0.20, 0.21, 0.27, 1)
+polygon = PackedVector2Array(-60, -60, 60, -60, 60, 60, -60, 60)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillar_D"]
+shape = SubResource("RectangleShape2D_pillar_big")
+
+[node name="TallObstacle" type="StaticBody2D" parent="."]
+position = Vector2(640, 160)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="TallObstacle"]
+color = Color(0.17, 0.18, 0.23, 1)
+polygon = PackedVector2Array(-45, -95, 45, -95, 45, 95, -45, 95)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TallObstacle"]
+shape = SubResource("RectangleShape2D_pillar_tall")
+
+[node name="WideObstacle" type="StaticBody2D" parent="."]
+position = Vector2(640, 650)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="WideObstacle"]
+color = Color(0.17, 0.18, 0.23, 1)
+polygon = PackedVector2Array(-95, -45, 95, -45, 95, 45, -95, 45)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WideObstacle"]
+shape = SubResource("RectangleShape2D_pillar_wide")
