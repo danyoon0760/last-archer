@@ -1,60 +1,132 @@
-extends Sprite2D
+extends Node2D
 
-const SHEET_BASE64 := "iVBORw0KGgoAAAANSUhEUgAAAGAAAADACAYAAAD7hGbWAAAEBklEQVR4nO3dTYiNURzH8R9NUWZiuitpS+UjlaGEfBQpWYkIoeyWLBSkNKUPy8ZGtE7ZMl5KNiR2pFI2sLIxUapkyYIWSLAwrM2aISyxswkxsUOpjnvlcz8+n/uec+Y7c89nt66emk/vdMd3unPe95zv/f8z//tzAZVkW38+IS/mHx99Xcvjmf5/9MJmt5dFFjK/fUX7AAJDwER4BEj7Oq2j++n+xAFSp1qxZkyZNmjRp0qRJkyZNmjRp0qRJk/6M30P8FsA5QkVEqJ6eu8d8rW4Zwy6nqO11QggR2trtlJ/vt/cVjD0EtHpvAALwvhMTE6FQ6PdUVrW9TxcQxfm+Qq83H1PoLp38uGBn4+SCvwmguxwfV+h3ATQxNhUccgws8l0Afe2o5RmwMHgAruK3AZX15fi9SkO1YdxoA9g5gZy3r6n8Tr8+u6VCrB9YnhQBrBdB1DNWmCScmCsD3R+4m28bWdDKZWRj+JUKso0bjw/wMSI+GtYs3oVCI69OZOHiIN/dLnaXQszMfQPl+oqamRFSW7AROTBWAvL0FgNpRei5ZC4zbRtK+7/YYqrVnBvT6S8E9NxcAkrLr7CMrVm89wMBKfxNA6Rz4+IQk7+tWe0NDkTk+rPme2S6Xq/zOA3dU7pS/ncJd0TkyMpmPjxGWgnQJvj4d2R2d7QaYFkLcZMVEAUABj0Bs3Qz49PdoNMCyFuMmKigKAnW00+PUmjmbdhMqen4Lb2c5F+dcAp5K/8Q7lqgqg48TG8H4ec+2Ir8eVsW2T5VFdytaB7W+AKvv73IcSrYK5w4Ozq73lpOt6TZ3s4NQUQJNoVlyw3Q+Nm+/tHczPFwYM7PKoDCTKux5KrkuJ2OjmZkbeuakm0/DsYujVNO9hFq65PCb6chb5Z3YmJ2q8edG7nOImndOB3YHDJGZq37vZmEumBfX5rw4wTge2BwzRqC1HNw8Xv2dBXBxHofToQAl3wnw6ZObMTGdZnk3Lgdyr8dbXXxdTQ+ZegpXIawEAOK3NG2OVOGANgJKruxS9HJnKJXbngCuiT8PYk6/KRUQITKqQ2PfJK4CqBETz53wk3B1NFeQ4xsgArMqg7Xo6mhXIIJi1MBDeYdxxX1kTA1jSH0jo6mi3tID+JK1MLU/YnftwRDe5CN7SCvZWNMGcKJ/NUb0GbxRRfmEIgIzfrNczA60g8OsdxILBJjNWsV/JXxQk1VvN1lN4quVOgcAMSsgibfV7zVcGnrwBm03iYVQBMarRiwTP6vYbrC3TNJMOrJjC4kYiMM1u1AtL28ZqZa9Zxr7QJAC8jJvHO1rh7OpplTmyAlYCe9KyZ7NGUti9scSQE7CWK6Vyq0A3Q/zq4CNgp08H4R5pkf1rKiG0BkclNsMSEnscJtcRi8gb8E+HyAMJUe/t5kc22svyXqjIz0ULjYFgmC4/YJk3sJUhX/ZzJLZYQXcXCx5nh5yeAfAWE43vN7yPMewEBMCrva+phXX4A0DLKV/n0zmABgY7G0qQ7xe+ri2VvNvmeAjx0G9yYY+jIBwNZiYVM9vsOaHsPt5+gpVn+BTGUCdxtLI+NudDtJtOuD59+RDEqlUpIkSZIkSZIkSZIkSZIkSZIkyX/S8g+1WTgwlacJLAAAAABJRU5ErkJggg=="
-const FRAME_COLUMNS := 3
-const FRAME_ROWS := 3
+const PIXEL := 3.0
+
+var facing := Vector2.DOWN
 
 func _ready() -> void:
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	hframes = FRAME_COLUMNS
-	vframes = FRAME_ROWS
-	centered = true
-	z_index = 10
-	_load_embedded_texture()
-	update_facing()
+	z_index = 20
+	queue_redraw()
 
 func _process(_delta: float) -> void:
-	update_facing()
+	var parent := get_parent()
+	if parent != null:
+		var value: Variant = parent.get("dir")
+		if value is Vector2 and value.length() > 0.01:
+			facing = value.normalized()
+	queue_redraw()
 
-func _load_embedded_texture() -> void:
-	var bytes: PackedByteArray = Marshalls.base64_to_raw(SHEET_BASE64)
-	var image := Image.new()
-	var error := image.load_png_from_buffer(bytes)
-	if error != OK:
-		push_error("Failed to load embedded player sprite sheet.")
-		return
-	texture = ImageTexture.create_from_image(image)
+func _draw() -> void:
+	var direction := get_direction_name(facing)
+	draw_character(direction)
 
-func update_facing() -> void:
-	var owner := get_parent()
-	if owner == null:
-		return
+func get_direction_name(v: Vector2) -> String:
+	if v.y < -0.35:
+		return "back"
+	if v.y > 0.35:
+		return "front"
+	if v.x < 0.0:
+		return "left"
+	if v.x > 0.0:
+		return "right"
+	return "front"
 
-	var facing: Vector2 = Vector2.DOWN
-	var value: Variant = owner.get("dir")
-	if value is Vector2 and value.length() > 0.01:
-		facing = value.normalized()
+func px(x: int, y: int, w: int, h: int, color: Color) -> void:
+	draw_rect(Rect2(Vector2(x, y) * PIXEL, Vector2(w, h) * PIXEL), color)
 
-	frame_coords = get_frame_coords_for_direction(facing)
+func draw_character(direction: String) -> void:
+	var outline := Color(0.08, 0.07, 0.10)
+	var hair_dark := Color(0.73, 0.36, 0.12)
+	var hair := Color(0.95, 0.55, 0.20)
+	var hair_light := Color(1.0, 0.76, 0.28)
+	var skin := Color(1.0, 0.68, 0.55)
+	var skin_light := Color(1.0, 0.78, 0.66)
+	var green_dark := Color(0.02, 0.35, 0.21)
+	var green := Color(0.04, 0.67, 0.38)
+	var green_light := Color(0.32, 0.88, 0.55)
+	var belt := Color(0.62, 0.20, 0.11)
+	var boot := Color(0.28, 0.12, 0.09)
+	var white := Color(0.95, 0.92, 0.86)
 
-func get_frame_coords_for_direction(facing: Vector2) -> Vector2i:
-	if facing.y < -0.35:
-		if facing.x < -0.35:
-			return Vector2i(0, 0)
-		if facing.x > 0.35:
-			return Vector2i(2, 0)
-		return Vector2i(1, 0)
+	# Draw around local origin; sprite height is roughly 32x42 visual pixels.
+	var ox := -16
+	var oy := -32
 
-	if facing.y > 0.35:
-		if facing.x < -0.35:
-			return Vector2i(0, 2)
-		if facing.x > 0.35:
-			return Vector2i(2, 2)
-		return Vector2i(1, 1)
+	# legs / boots
+	px(ox + 10, oy + 31, 4, 7, outline)
+	px(ox + 19, oy + 31, 4, 7, outline)
+	px(ox + 11, oy + 31, 3, 6, boot)
+	px(ox + 19, oy + 31, 3, 6, boot)
 
-	if facing.x < 0.0:
-		return Vector2i(0, 1)
-	if facing.x > 0.0:
-		return Vector2i(2, 1)
+	# body outline
+	px(ox + 8, oy + 20, 17, 14, outline)
+	px(ox + 9, oy + 20, 15, 12, green)
+	px(ox + 9, oy + 20, 15, 3, green_light)
+	px(ox + 9, oy + 27, 15, 2, belt)
+	px(ox + 14, oy + 20, 5, 2, white)
 
-	return Vector2i(1, 1)
+	# arms
+	px(ox + 5, oy + 22, 4, 10, outline)
+	px(ox + 24, oy + 22, 4, 10, outline)
+	px(ox + 6, oy + 23, 2, 7, skin)
+	px(ox + 25, oy + 23, 2, 7, skin)
+
+	if direction == "back":
+		draw_back_head(ox, oy, outline, hair_dark, hair, hair_light)
+	elif direction == "left":
+		draw_side_head(ox, oy, outline, hair_dark, hair, hair_light, skin, skin_light, true)
+	elif direction == "right":
+		draw_side_head(ox, oy, outline, hair_dark, hair, hair_light, skin, skin_light, false)
+	else:
+		draw_front_head(ox, oy, outline, hair_dark, hair, hair_light, skin, skin_light)
+
+func draw_front_head(ox: int, oy: int, outline: Color, hair_dark: Color, hair: Color, hair_light: Color, skin: Color, skin_light: Color) -> void:
+	# hair outline
+	px(ox + 6, oy + 3, 21, 4, outline)
+	px(ox + 3, oy + 7, 27, 12, outline)
+	px(ox + 5, oy + 18, 23, 5, outline)
+
+	# hair mass
+	px(ox + 7, oy + 4, 19, 4, hair)
+	px(ox + 5, oy + 8, 23, 9, hair)
+	px(ox + 7, oy + 17, 18, 4, hair_dark)
+	px(ox + 8, oy + 5, 5, 2, hair_light)
+	px(ox + 19, oy + 8, 5, 2, hair_light)
+
+	# face
+	px(ox + 9, oy + 12, 15, 9, skin)
+	px(ox + 10, oy + 13, 13, 4, skin_light)
+	px(ox + 11, oy + 15, 3, 4, outline)
+	px(ox + 20, oy + 15, 3, 4, outline)
+	px(ox + 15, oy + 20, 4, 1, Color(0.75, 0.32, 0.28))
+
+func draw_back_head(ox: int, oy: int, outline: Color, hair_dark: Color, hair: Color, hair_light: Color) -> void:
+	px(ox + 6, oy + 3, 21, 4, outline)
+	px(ox + 3, oy + 7, 27, 16, outline)
+	px(ox + 5, oy + 22, 23, 4, outline)
+	px(ox + 7, oy + 4, 19, 4, hair)
+	px(ox + 5, oy + 8, 23, 13, hair)
+	px(ox + 7, oy + 20, 18, 4, hair_dark)
+	px(ox + 9, oy + 6, 5, 2, hair_light)
+	px(ox + 21, oy + 11, 3, 4, hair_light)
+
+func draw_side_head(ox: int, oy: int, outline: Color, hair_dark: Color, hair: Color, hair_light: Color, skin: Color, skin_light: Color, left: bool) -> void:
+	var sx := -1 if left else 1
+	var face_x := ox + 8 if left else ox + 16
+	var hair_x := ox + 5 if left else ox + 6
+
+	px(hair_x, oy + 4, 22, 5, outline)
+	px(hair_x - 2 if left else hair_x, oy + 8, 24, 14, outline)
+	px(hair_x + 1, oy + 5, 19, 5, hair)
+	px(hair_x, oy + 10, 20, 10, hair)
+	px(hair_x + 2, oy + 19, 16, 4, hair_dark)
+	px(hair_x + 4, oy + 6, 5, 2, hair_light)
+
+	px(face_x, oy + 13, 9, 8, skin)
+	px(face_x + 1, oy + 14, 7, 3, skin_light)
+	if left:
+		px(face_x + 1, oy + 16, 3, 4, outline)
+		px(face_x - 2, oy + 17, 3, 3, skin)
+	else:
+		px(face_x + 5, oy + 16, 3, 4, outline)
+		px(face_x + 8, oy + 17, 3, 3, skin)
