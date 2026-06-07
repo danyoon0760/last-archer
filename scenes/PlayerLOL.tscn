@@ -5,7 +5,7 @@
 [ext_resource type="Script" path="res://scripts/player_sprite.gd" id="3_player_sprite_script"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player_lol"]
-size = Vector2(32, 32)
+size = Vector2(24, 28)
 
 [node name="Player" type="CharacterBody2D"]
 position = Vector2(640, 360)
@@ -16,11 +16,12 @@ arrow_scene = ExtResource("2_arrow_scene")
 click_radius = 70.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 8)
 shape = SubResource("RectangleShape2D_player_lol")
 
 [node name="CharacterSprite" type="Sprite2D" parent="."]
 position = Vector2(0, -18)
-scale = Vector2(3, 3)
+scale = Vector2(1, 1)
 script = ExtResource("3_player_sprite_script")
 
 [node name="Camera2D" type="Camera2D" parent="."]
