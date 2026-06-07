@@ -1,0 +1,153 @@
+[gd_scene load_steps=6 format=3]
+
+[sub_resource type="RectangleShape2D" id="WallHorizontal"]
+size = Vector2(1700, 72)
+
+[sub_resource type="RectangleShape2D" id="WallVertical"]
+size = Vector2(72, 1050)
+
+[sub_resource type="RectangleShape2D" id="PillarShape"]
+size = Vector2(120, 120)
+
+[sub_resource type="RectangleShape2D" id="RuinTall"]
+size = Vector2(90, 230)
+
+[sub_resource type="RectangleShape2D" id="RuinWide"]
+size = Vector2(260, 90)
+
+[node name="DungeonMap" type="Node2D"]
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.045, 0.05, 0.065, 1)
+polygon = PackedVector2Array(-210, -170, 1490, -170, 1490, 880, -210, 880)
+
+[node name="InnerFloor" type="Polygon2D" parent="."]
+color = Color(0.075, 0.08, 0.105, 1)
+polygon = PackedVector2Array(-90, -70, 1370, -70, 1370, 780, -90, 780)
+
+[node name="TopWall" type="StaticBody2D" parent="."]
+position = Vector2(640, -206)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="TopWall"]
+color = Color(0.13, 0.13, 0.16, 1)
+polygon = PackedVector2Array(-850, -36, 850, -36, 850, 36, -850, 36)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TopWall"]
+shape = SubResource("WallHorizontal")
+
+[node name="BottomWall" type="StaticBody2D" parent="."]
+position = Vector2(640, 916)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="BottomWall"]
+color = Color(0.13, 0.13, 0.16, 1)
+polygon = PackedVector2Array(-850, -36, 850, -36, 850, 36, -850, 36)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BottomWall"]
+shape = SubResource("WallHorizontal")
+
+[node name="LeftWall" type="StaticBody2D" parent="."]
+position = Vector2(-246, 355)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="LeftWall"]
+color = Color(0.13, 0.13, 0.16, 1)
+polygon = PackedVector2Array(-36, -525, 36, -525, 36, 525, -36, 525)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftWall"]
+shape = SubResource("WallVertical")
+
+[node name="RightWall" type="StaticBody2D" parent="."]
+position = Vector2(1526, 355)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="RightWall"]
+color = Color(0.13, 0.13, 0.16, 1)
+polygon = PackedVector2Array(-36, -525, 36, -525, 36, 525, -36, 525)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall"]
+shape = SubResource("WallVertical")
+
+[node name="PillarLeftTop" type="StaticBody2D" parent="."]
+position = Vector2(250, 130)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="PillarLeftTop"]
+color = Color(0.18, 0.18, 0.22, 1)
+polygon = PackedVector2Array(-60, -60, 60, -60, 60, 60, -60, 60)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PillarLeftTop"]
+shape = SubResource("PillarShape")
+
+[node name="PillarRightTop" type="StaticBody2D" parent="."]
+position = Vector2(1030, 130)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="PillarRightTop"]
+color = Color(0.18, 0.18, 0.22, 1)
+polygon = PackedVector2Array(-60, -60, 60, -60, 60, 60, -60, 60)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PillarRightTop"]
+shape = SubResource("PillarShape")
+
+[node name="PillarLeftBottom" type="StaticBody2D" parent="."]
+position = Vector2(250, 630)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="PillarLeftBottom"]
+color = Color(0.18, 0.18, 0.22, 1)
+polygon = PackedVector2Array(-60, -60, 60, -60, 60, 60, -60, 60)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PillarLeftBottom"]
+shape = SubResource("PillarShape")
+
+[node name="PillarRightBottom" type="StaticBody2D" parent="."]
+position = Vector2(1030, 630)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="PillarRightBottom"]
+color = Color(0.18, 0.18, 0.22, 1)
+polygon = PackedVector2Array(-60, -60, 60, -60, 60, 60, -60, 60)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PillarRightBottom"]
+shape = SubResource("PillarShape")
+
+[node name="TallRuin" type="StaticBody2D" parent="."]
+position = Vector2(640, 170)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="TallRuin"]
+color = Color(0.15, 0.15, 0.19, 1)
+polygon = PackedVector2Array(-45, -115, 45, -115, 45, 115, -45, 115)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TallRuin"]
+shape = SubResource("RuinTall")
+
+[node name="WideRuin" type="StaticBody2D" parent="."]
+position = Vector2(640, 650)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="WideRuin"]
+color = Color(0.15, 0.15, 0.19, 1)
+polygon = PackedVector2Array(-130, -45, 130, -45, 130, 45, -130, 45)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WideRuin"]
+shape = SubResource("RuinWide")
+
+[node name="PlayerSpawn" type="Marker2D" parent="."]
+position = Vector2(640, 380)
+
+[node name="Label" type="Label" parent="."]
+position = Vector2(-70, -130)
+text = "DUNGEON / 3"
