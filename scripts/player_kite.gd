@@ -470,16 +470,4 @@ func name_s() -> String:
 	return ["IDLE", "MOVE", "CHASE", "WINDUP", "RECOVER", "AMOVE", "HOLD"][state]
 
 func _draw() -> void:
-	var c := Color(0.1, 0.35, 1.0)
-	if is_dead:
-		c = Color(0.25, 0.25, 0.25)
-	elif inv > 0.0:
-		c = Color(0.35, 0.9, 1.0)
-	elif q > 0.0:
-		c = Color(0.45, 0.6, 1.0)
-	draw_circle(Vector2.ZERO, 16, c)
-	draw_line(Vector2.ZERO, dir * 24, Color.WHITE, 3)
-	draw_arc(Vector2.ZERO, attack_range, 0, TAU, 96, Color(0.4, 0.65, 1.0, 0.12), 1)
-	draw_string(ThemeDB.fallback_font, Vector2(-42, 42), name_s(), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.WHITE)
-	if is_dead:
-		draw_string(ThemeDB.fallback_font, Vector2(-64, -56), "DEAD - R", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color.WHITE)
+	pass
