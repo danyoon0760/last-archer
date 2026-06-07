@@ -1,0 +1,138 @@
+[gd_scene load_steps=6 format=3]
+
+[sub_resource type="RectangleShape2D" id="WallHorizontal"]
+size = Vector2(1500, 64)
+
+[sub_resource type="RectangleShape2D" id="WallVertical"]
+size = Vector2(64, 900)
+
+[sub_resource type="RectangleShape2D" id="HouseShape"]
+size = Vector2(180, 140)
+
+[sub_resource type="RectangleShape2D" id="ShopShape"]
+size = Vector2(220, 150)
+
+[sub_resource type="RectangleShape2D" id="FountainShape"]
+size = Vector2(96, 96)
+
+[node name="TownMap" type="Node2D"]
+
+[node name="Ground" type="Polygon2D" parent="."]
+color = Color(0.18, 0.17, 0.13, 1)
+polygon = PackedVector2Array(-110, -80, 1390, -80, 1390, 820, -110, 820)
+
+[node name="RoadHorizontal" type="Polygon2D" parent="."]
+color = Color(0.30, 0.27, 0.20, 1)
+polygon = PackedVector2Array(-40, 320, 1320, 320, 1320, 430, -40, 430)
+
+[node name="RoadVertical" type="Polygon2D" parent="."]
+color = Color(0.30, 0.27, 0.20, 1)
+polygon = PackedVector2Array(585, -20, 705, -20, 705, 760, 585, 760)
+
+[node name="TopFence" type="StaticBody2D" parent="."]
+position = Vector2(640, -112)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="TopFence"]
+color = Color(0.12, 0.10, 0.075, 1)
+polygon = PackedVector2Array(-750, -32, 750, -32, 750, 32, -750, 32)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TopFence"]
+shape = SubResource("WallHorizontal")
+
+[node name="BottomFence" type="StaticBody2D" parent="."]
+position = Vector2(640, 852)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="BottomFence"]
+color = Color(0.12, 0.10, 0.075, 1)
+polygon = PackedVector2Array(-750, -32, 750, -32, 750, 32, -750, 32)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BottomFence"]
+shape = SubResource("WallHorizontal")
+
+[node name="LeftFence" type="StaticBody2D" parent="."]
+position = Vector2(-142, 370)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="LeftFence"]
+color = Color(0.12, 0.10, 0.075, 1)
+polygon = PackedVector2Array(-32, -450, 32, -450, 32, 450, -32, 450)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftFence"]
+shape = SubResource("WallVertical")
+
+[node name="RightFence" type="StaticBody2D" parent="."]
+position = Vector2(1422, 370)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="RightFence"]
+color = Color(0.12, 0.10, 0.075, 1)
+polygon = PackedVector2Array(-32, -450, 32, -450, 32, 450, -32, 450)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightFence"]
+shape = SubResource("WallVertical")
+
+[node name="GuildHouse" type="StaticBody2D" parent="."]
+position = Vector2(330, 185)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="GuildHouse"]
+color = Color(0.24, 0.17, 0.10, 1)
+polygon = PackedVector2Array(-90, -70, 90, -70, 90, 70, -90, 70)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GuildHouse"]
+shape = SubResource("HouseShape")
+
+[node name="Shop" type="StaticBody2D" parent="."]
+position = Vector2(950, 200)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Shop"]
+color = Color(0.20, 0.13, 0.08, 1)
+polygon = PackedVector2Array(-110, -75, 110, -75, 110, 75, -110, 75)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Shop"]
+shape = SubResource("ShopShape")
+
+[node name="Fountain" type="StaticBody2D" parent="."]
+position = Vector2(645, 375)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Fountain"]
+color = Color(0.14, 0.26, 0.32, 1)
+polygon = PackedVector2Array(-48, -48, 48, -48, 48, 48, -48, 48)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fountain"]
+shape = SubResource("FountainShape")
+
+[node name="OldHouse" type="StaticBody2D" parent="."]
+position = Vector2(360, 610)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="OldHouse"]
+color = Color(0.17, 0.12, 0.085, 1)
+polygon = PackedVector2Array(-90, -70, 90, -70, 90, 70, -90, 70)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OldHouse"]
+shape = SubResource("HouseShape")
+
+[node name="DungeonGate" type="Polygon2D" parent="."]
+position = Vector2(1040, 620)
+color = Color(0.09, 0.075, 0.11, 1)
+polygon = PackedVector2Array(-70, -80, 70, -80, 70, 80, -70, 80)
+
+[node name="PlayerSpawn" type="Marker2D" parent="."]
+position = Vector2(640, 520)
+
+[node name="Label" type="Label" parent="."]
+position = Vector2(-60, -52)
+text = "TOWN / 2"
