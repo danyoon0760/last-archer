@@ -1,0 +1,102 @@
+[gd_scene load_steps=5 format=3]
+
+[sub_resource type="RectangleShape2D" id="WallHorizontal"]
+size = Vector2(760, 48)
+
+[sub_resource type="RectangleShape2D" id="WallVertical"]
+size = Vector2(48, 480)
+
+[sub_resource type="RectangleShape2D" id="DeskShape"]
+size = Vector2(180, 80)
+
+[sub_resource type="RectangleShape2D" id="BedShape"]
+size = Vector2(220, 110)
+
+[node name="RoomMap" type="Node2D"]
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.085, 0.075, 0.07, 1)
+polygon = PackedVector2Array(260, 120, 1020, 120, 1020, 600, 260, 600)
+
+[node name="FloorInner" type="Polygon2D" parent="."]
+color = Color(0.12, 0.105, 0.09, 1)
+polygon = PackedVector2Array(308, 168, 972, 168, 972, 552, 308, 552)
+
+[node name="TopWall" type="StaticBody2D" parent="."]
+position = Vector2(640, 96)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="TopWall"]
+color = Color(0.16, 0.13, 0.11, 1)
+polygon = PackedVector2Array(-380, -24, 380, -24, 380, 24, -380, 24)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TopWall"]
+shape = SubResource("WallHorizontal")
+
+[node name="BottomWall" type="StaticBody2D" parent="."]
+position = Vector2(640, 624)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="BottomWall"]
+color = Color(0.16, 0.13, 0.11, 1)
+polygon = PackedVector2Array(-380, -24, 380, -24, 380, 24, -380, 24)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BottomWall"]
+shape = SubResource("WallHorizontal")
+
+[node name="LeftWall" type="StaticBody2D" parent="."]
+position = Vector2(236, 360)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="LeftWall"]
+color = Color(0.16, 0.13, 0.11, 1)
+polygon = PackedVector2Array(-24, -240, 24, -240, 24, 240, -24, 240)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftWall"]
+shape = SubResource("WallVertical")
+
+[node name="RightWall" type="StaticBody2D" parent="."]
+position = Vector2(1044, 360)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="RightWall"]
+color = Color(0.16, 0.13, 0.11, 1)
+polygon = PackedVector2Array(-24, -240, 24, -240, 24, 240, -24, 240)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightWall"]
+shape = SubResource("WallVertical")
+
+[node name="Desk" type="StaticBody2D" parent="."]
+position = Vector2(760, 215)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Desk"]
+color = Color(0.23, 0.16, 0.10, 1)
+polygon = PackedVector2Array(-90, -40, 90, -40, 90, 40, -90, 40)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Desk"]
+shape = SubResource("DeskShape")
+
+[node name="Bed" type="StaticBody2D" parent="."]
+position = Vector2(430, 475)
+collision_layer = 4
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Bed"]
+color = Color(0.11, 0.12, 0.20, 1)
+polygon = PackedVector2Array(-110, -55, 110, -55, 110, 55, -110, 55)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Bed"]
+shape = SubResource("BedShape")
+
+[node name="PlayerSpawn" type="Marker2D" parent="."]
+position = Vector2(640, 360)
+
+[node name="Label" type="Label" parent="."]
+position = Vector2(292, 132)
+text = "ROOM / 1"
