@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main_script"]
 [ext_resource type="PackedScene" path="res://scenes/PlayerLOL.tscn" id="3_player_scene"]
@@ -16,6 +16,8 @@
 [ext_resource type="Script" path="res://scripts/death_overlay.gd" id="15_death_overlay_script"]
 [ext_resource type="Script" path="res://scripts/augment_manager.gd" id="16_augment_manager_script"]
 [ext_resource type="Script" path="res://scripts/augment_overlay.gd" id="17_augment_overlay_script"]
+[ext_resource type="Script" path="res://scripts/equipment_manager.gd" id="18_equipment_manager_script"]
+[ext_resource type="Script" path="res://scripts/equipment_shop_overlay.gd" id="19_equipment_shop_overlay_script"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main_script")
@@ -27,6 +29,9 @@ dungeon_map_scene = ExtResource("12_dungeon_map_scene")
 
 [node name="GameManager" type="Node" parent="."]
 script = ExtResource("4_game_manager_script")
+
+[node name="EquipmentManager" type="Node" parent="."]
+script = ExtResource("18_equipment_manager_script")
 
 [node name="AugmentManager" type="Node" parent="."]
 script = ExtResource("16_augment_manager_script")
@@ -58,3 +63,6 @@ script = ExtResource("15_death_overlay_script")
 
 [node name="AugmentOverlay" type="CanvasLayer" parent="."]
 script = ExtResource("17_augment_overlay_script")
+
+[node name="EquipmentShopOverlay" type="CanvasLayer" parent="."]
+script = ExtResource("19_equipment_shop_overlay_script")
