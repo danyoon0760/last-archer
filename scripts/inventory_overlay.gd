@@ -8,11 +8,11 @@ var current_tab: String = "inventory"
 var player: Node
 var game_manager: Node
 var stage_run_manager: Node
+var equipment_manager: Node
+var augment_manager: Node
 
 func _ready() -> void:
-	player = get_tree().get_first_node_in_group("player")
-	game_manager = get_tree().get_first_node_in_group("game_manager")
-	stage_run_manager = get_tree().get_first_node_in_group("stage_run_manager")
+	refresh_refs()
 	build_ui()
 	set_panel_visible(false)
 
@@ -20,6 +20,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_I or event.keycode == KEY_TAB or event.keycode == KEY_ESCAPE:
 			set_panel_visible(not panel.visible)
+
+func refresh_refs() -> void:
+	player = get_tree().get_first_node_in_group("player")
+	game_manager = get_tree().get_first_node_in_group("game_manager")
+	stage_run_manager = get_tree().get_first_node_in_group("stage_run_manager")
+	equipment_manager = get_tree().get_first_node_in_group("equipment_manager")
+	augment_manager = get_tree().get_first_node_in_group("augment_manager")
 
 func build_ui() -> void:
 	open_button = Button.new()
@@ -30,8 +37,8 @@ func build_ui() -> void:
 	add_child(open_button)
 
 	panel = PanelContainer.new()
-	panel.position = Vector2(165, 130)
-	panel.custom_minimum_size = Vector2(830, 620)
+	panel.position = Vector2(145, 130)
+	panel.custom_minimum_size = Vector2(960, 620)
 	add_child(panel)
 
 	var outer_margin := MarginContainer.new()
@@ -48,7 +55,7 @@ func build_ui() -> void:
 	build_tabs(main_column)
 
 	tab_content = VBoxContainer.new()
-	tab_content.custom_minimum_size = Vector2(810, 520)
+	tab_content.custom_minimum_size = Vector2(940, 520)
 	tab_content.add_theme_constant_override("separation", 14)
 	main_column.add_child(tab_content)
 
@@ -60,6 +67,7 @@ func build_tabs(parent: Control) -> void:
 	parent.add_child(row)
 
 	add_tab_button(row, "inventory", "인벤토리")
+	add_tab_button(row, "augment", "증강")
 	add_tab_button(row, "status", "스테이터스")
 	add_tab_button(row, "settings", "설정")
 	add_tab_button(row, "save", "저장 및 종료")
@@ -67,7 +75,7 @@ func build_tabs(parent: Control) -> void:
 func add_tab_button(parent: Control, tab_id: String, text: String) -> void:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(205, 58)
+	button.custom_minimum_size = Vector2(188, 58)
 	button.pressed.connect(_on_tab_pressed.bind(tab_id))
 	parent.add_child(button)
 	tab_buttons[tab_id] = button
@@ -77,12 +85,15 @@ func clear_tab_content() -> void:
 		child.queue_free()
 
 func show_tab(tab_id: String) -> void:
+	refresh_refs()
 	current_tab = tab_id
 	clear_tab_content()
 	update_tab_button_texts()
 	match tab_id:
 		"inventory":
 			build_inventory_tab()
+		"augment":
+			build_augment_tab()
 		"status":
 			build_status_tab()
 		"settings":
@@ -93,6 +104,7 @@ func show_tab(tab_id: String) -> void:
 func update_tab_button_texts() -> void:
 	var labels := {
 		"inventory": "인벤토리",
+		"augment": "증강",
 		"status": "스테이터스",
 		"settings": "설정",
 		"save": "저장 및 종료"
@@ -100,9 +112,9 @@ func update_tab_button_texts() -> void:
 	for key in tab_buttons.keys():
 		var button: Button = tab_buttons[key]
 		if key == current_tab:
-			button.text = "> " + labels[key]
+			button.text = "> " + str(labels[key])
 		else:
-			button.text = labels[key]
+			button.text = str(labels[key])
 
 func build_inventory_tab() -> void:
 	var top_row := HBoxContainer.new()
@@ -111,10 +123,8 @@ func build_inventory_tab() -> void:
 
 	build_portrait_block(top_row)
 	build_equipment_block(top_row)
-	build_augment_card(top_row, "증강 1", "비어 있음", "스테이지 보상으로 획득\n최대 2개 장착")
-	build_augment_card(top_row, "증강 2", "비어 있음", "교체/강화 시스템 예정")
+	build_augment_summary_cards(top_row)
 	build_info_block(top_row)
-
 	build_inventory_grid(tab_content)
 
 func build_portrait_block(parent: Control) -> void:
@@ -134,16 +144,32 @@ func build_equipment_block(parent: Control) -> void:
 	column.add_theme_constant_override("separation", 12)
 	parent.add_child(column)
 
-	build_equipment_slot(column, "활", "기본 활")
+	var bow_name: String = "기본 활"
+	if equipment_manager != null and equipment_manager.has_method("get_equipped_bow_name"):
+		bow_name = str(equipment_manager.call("get_equipped_bow_name"))
+	build_equipment_slot(column, "활", bow_name)
 	build_equipment_slot(column, "갑옷", "없음")
 	build_equipment_slot(column, "신발", "없음")
 
 func build_equipment_slot(parent: Control, title: String, value: String) -> void:
 	var button := Button.new()
 	button.text = title + "\n" + value
-	button.custom_minimum_size = Vector2(90, 62)
+	button.custom_minimum_size = Vector2(100, 62)
 	button.pressed.connect(_on_placeholder_pressed.bind(title + " 슬롯. 나중에 장비 장착/교체 UI 연결."))
 	parent.add_child(button)
+
+func build_augment_summary_cards(parent: Control) -> void:
+	var active: Array = []
+	if augment_manager != null:
+		active = augment_manager.get("active_augments")
+	for i in range(2):
+		var id: String = ""
+		if i < active.size():
+			id = str(active[i])
+		if id == "":
+			build_augment_card(parent, "증강 " + str(i + 1), "비어 있음", "던전 보상으로 획득\n마을 귀환/사망 시 초기화")
+		else:
+			build_augment_card(parent, "증강 " + str(i + 1), get_augment_name_safe(id), get_augment_desc_safe(id))
 
 func build_augment_card(parent: Control, title: String, name_text: String, desc_text: String) -> void:
 	var card := PanelContainer.new()
@@ -202,7 +228,7 @@ func build_info_block(parent: Control) -> void:
 
 func build_inventory_grid(parent: Control) -> void:
 	var grid_panel := PanelContainer.new()
-	grid_panel.custom_minimum_size = Vector2(800, 250)
+	grid_panel.custom_minimum_size = Vector2(920, 250)
 	parent.add_child(grid_panel)
 
 	var margin := MarginContainer.new()
@@ -229,10 +255,57 @@ func build_inventory_grid(parent: Control) -> void:
 
 	for i in range(30):
 		var slot := Button.new()
-		slot.custom_minimum_size = Vector2(74, 52)
+		slot.custom_minimum_size = Vector2(84, 52)
 		slot.text = get_slot_text(i)
 		slot.pressed.connect(_on_placeholder_pressed.bind("인벤토리 슬롯 " + str(i + 1) + ". 나중에 아이템 상세/사용/판매 연결."))
 		grid.add_child(slot)
+
+func build_augment_tab() -> void:
+	var title := Label.new()
+	title.text = "증강"
+	title.add_theme_font_size_override("font_size", 28)
+	tab_content.add_child(title)
+
+	var info := Label.new()
+	info.text = "증강은 던전 런 안에서만 유지된다. 마을 귀환 또는 사망 시 초기화.\n획득 타이밍: 각 층 2 / 5 / 8 스테이지 클리어."
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_theme_font_size_override("font_size", 18)
+	tab_content.add_child(info)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	tab_content.add_child(row)
+	build_augment_summary_cards(row)
+
+	var list_panel := PanelContainer.new()
+	list_panel.custom_minimum_size = Vector2(920, 220)
+	tab_content.add_child(list_panel)
+
+	var list_label := Label.new()
+	list_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	list_label.add_theme_font_size_override("font_size", 17)
+	list_label.text = get_all_augment_text()
+	list_panel.add_child(list_label)
+
+func get_all_augment_text() -> String:
+	if augment_manager == null:
+		return "AugmentManager 없음."
+	var data: Dictionary = augment_manager.get("augment_data")
+	var text := "등장 가능한 증강 목록\n\n"
+	for id in data.keys():
+		var key := str(id)
+		text += "- " + get_augment_name_safe(key) + ": " + get_augment_desc_safe(key) + "\n"
+	return text
+
+func get_augment_name_safe(id: String) -> String:
+	if augment_manager != null and augment_manager.has_method("get_augment_name"):
+		return str(augment_manager.call("get_augment_name", id))
+	return id
+
+func get_augment_desc_safe(id: String) -> String:
+	if augment_manager != null and augment_manager.has_method("get_augment_desc"):
+		return str(augment_manager.call("get_augment_desc", id))
+	return ""
 
 func build_status_tab() -> void:
 	var title := Label.new()
@@ -241,7 +314,7 @@ func build_status_tab() -> void:
 	tab_content.add_child(title)
 
 	var status_panel := PanelContainer.new()
-	status_panel.custom_minimum_size = Vector2(780, 400)
+	status_panel.custom_minimum_size = Vector2(920, 400)
 	tab_content.add_child(status_panel)
 
 	var label := Label.new()
@@ -250,14 +323,32 @@ func build_status_tab() -> void:
 	status_panel.add_child(label)
 
 func get_status_text() -> String:
-	var text := "전투 스탯 / 임시\n\n"
-	text += "공격력: 25\n"
-	text += "공격속도: 1.00\n"
-	text += "이동속도: 기본\n"
+	refresh_refs()
+	var damage: int = 0
+	var attack_speed: float = 0.0
+	var move_speed: float = 0.0
+	var dodge_cd: float = 0.0
+	if player != null:
+		damage = roundi(float(player.get("basic_attack_damage")))
+		attack_speed = float(player.get("attack_speed"))
+		move_speed = float(player.get("move_speed"))
+		dodge_cd = float(player.get("dodge_cooldown"))
+	var equipment_text := "장비 없음"
+	if equipment_manager != null and equipment_manager.has_method("get_equipment_summary"):
+		equipment_text = str(equipment_manager.call("get_equipment_summary"))
+	var augment_text := "증강 없음"
+	if augment_manager != null and augment_manager.has_method("get_active_summary"):
+		augment_text = str(augment_manager.call("get_active_summary"))
+	var text := "전투 스탯\n\n"
+	text += "공격력: " + str(damage) + "\n"
+	text += "공격속도: " + str(snappedf(attack_speed, 0.01)) + "\n"
+	text += "이동속도: " + str(roundi(move_speed)) + "\n"
+	text += "대시 쿨타임: " + str(snappedf(dodge_cd, 0.01)) + "\n"
 	text += "방어력: 0\n"
 	text += "피흡: 0%\n"
 	text += "치명타 확률: 0%\n\n"
-	text += "나중에 장비, 증강, 음식, 연금술 효과를 합산해서 표시."
+	text += equipment_text + "\n"
+	text += "증강: " + augment_text
 	return text
 
 func build_settings_tab() -> void:
@@ -267,7 +358,7 @@ func build_settings_tab() -> void:
 	tab_content.add_child(title)
 
 	var panel_box := PanelContainer.new()
-	panel_box.custom_minimum_size = Vector2(780, 400)
+	panel_box.custom_minimum_size = Vector2(920, 400)
 	tab_content.add_child(panel_box)
 
 	var column := VBoxContainer.new()
@@ -296,7 +387,7 @@ func build_save_tab() -> void:
 	tab_content.add_child(title)
 
 	var panel_box := PanelContainer.new()
-	panel_box.custom_minimum_size = Vector2(780, 400)
+	panel_box.custom_minimum_size = Vector2(920, 400)
 	tab_content.add_child(panel_box)
 
 	var column := VBoxContainer.new()
@@ -341,6 +432,8 @@ func get_slot_text(index: int) -> String:
 func set_panel_visible(value: bool) -> void:
 	if panel != null:
 		panel.visible = value
+		if value:
+			show_tab(current_tab)
 
 func _on_open_button_pressed() -> void:
 	set_panel_visible(not panel.visible)
