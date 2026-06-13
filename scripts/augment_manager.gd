@@ -86,7 +86,7 @@ func choose_offer(index: int) -> void:
 		return
 	if index < 0 or index >= current_offer.size():
 		return
-	var selected := current_offer[index]
+	var selected: String = current_offer[index]
 	if active_augments.size() < MAX_AUGMENTS:
 		active_augments.append(selected)
 		finish_offer()
@@ -164,10 +164,10 @@ func apply_augments_to_player() -> void:
 	if has_augment("swift_shot"):
 		player.set("attack_speed", float(player.get("attack_speed")) + 0.35)
 	if has_augment("power_arrow"):
-		player.set("basic_attack_damage", int(player.get("basic_attack_damage")) + 8)
+		player.set("basic_attack_damage", roundi(float(player.get("basic_attack_damage"))) + 8)
 	if has_augment("roll_shot"):
 		player.set("dodge_cooldown", maxf(0.55, float(player.get("dodge_cooldown")) * 0.72))
-		player.set("basic_attack_damage", int(player.get("basic_attack_damage")) + 3)
+		player.set("basic_attack_damage", roundi(float(player.get("basic_attack_damage"))) + 3)
 
 	if player.has_method("notify_stats_changed"):
 		player.notify_stats_changed()
@@ -176,11 +176,11 @@ func apply_base_stats(player: Node) -> void:
 	var equipment_manager := get_tree().get_first_node_in_group("equipment_manager")
 	if equipment_manager != null:
 		if equipment_manager.has_method("get_equipped_attack_speed"):
-			player.set("attack_speed", float(equipment_manager.get_equipped_attack_speed()))
+			player.set("attack_speed", float(equipment_manager.call("get_equipped_attack_speed")))
 		else:
 			player.set("attack_speed", fallback_attack_speed)
 		if equipment_manager.has_method("get_equipped_damage"):
-			player.set("basic_attack_damage", int(equipment_manager.get_equipped_damage()))
+			player.set("basic_attack_damage", roundi(float(equipment_manager.call("get_equipped_damage"))))
 		else:
 			player.set("basic_attack_damage", fallback_basic_attack_damage)
 	else:
@@ -192,6 +192,6 @@ func capture_fallback_stats(player: Node) -> void:
 	if fallback_stats_captured:
 		return
 	fallback_attack_speed = float(player.get("attack_speed"))
-	fallback_basic_attack_damage = int(player.get("basic_attack_damage"))
+	fallback_basic_attack_damage = roundi(float(player.get("basic_attack_damage")))
 	fallback_dodge_cooldown = float(player.get("dodge_cooldown"))
 	fallback_stats_captured = true
