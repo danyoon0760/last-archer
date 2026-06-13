@@ -2,6 +2,7 @@ extends Node
 
 signal stage_changed
 signal reward_pending_changed
+signal death_pending_changed
 
 const STAGES_PER_FLOOR: int = 10
 const STREAK_MULTIPLIERS: Array[float] = [1.0, 1.5, 2.2, 3.0]
@@ -15,6 +16,7 @@ var stage_number: int = 1
 var clear_streak: int = 0
 var enemies_alive: int = 0
 var reward_pending: bool = false
+var death_pending: bool = false
 var last_reward_gold: int = 0
 var last_reward_gel: int = 0
 var stage_enemy_nodes: Array[Node] = []
@@ -22,6 +24,15 @@ var stage_enemy_nodes: Array[Node] = []
 func _ready() -> void:
 	add_to_group("stage_run_manager")
 	call_deferred("connect_map_manager")
+
+func _process(_delta: float) -> void:
+	if death_pending:
+		return
+	if not is_dungeon_loaded():
+		return
+	var player := get_tree().get_first_node_in_group("player")
+	if player != null and bool(player.get("is_dead")):
+		fail_current_stage_by_death()
 
 func connect_map_manager() -> void:
 	var map_manager := get_tree().get_first_node_in_group("map_manager")
@@ -35,9 +46,12 @@ func connect_map_manager() -> void:
 		start_current_stage()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not reward_pending:
-		return
 	if event is InputEventKey and event.pressed and not event.echo:
+		if death_pending and event.keycode == KEY_M:
+			return_to_town_after_death()
+			return
+		if not reward_pending:
+			return
 		match event.keycode:
 			KEY_N:
 				continue_to_next_stage()
@@ -49,13 +63,19 @@ func _on_map_changed(map_name: String) -> void:
 	reward_pending = false
 	last_reward_gold = 0
 	last_reward_gel = 0
+	if map_name == "town":
+		death_pending = false
+		call_deferred("revive_player_after_death")
 	reward_pending_changed.emit()
+	death_pending_changed.emit()
 	stage_changed.emit()
 	if map_name == "dungeon":
 		call_deferred("start_current_stage")
 
 func start_current_stage() -> void:
 	if not is_dungeon_loaded():
+		return
+	if death_pending:
 		return
 	clear_stage_enemies()
 	reward_pending = false
@@ -66,6 +86,7 @@ func start_current_stage() -> void:
 	spawn_three_encounter_packs()
 	stage_changed.emit()
 	reward_pending_changed.emit()
+	death_pending_changed.emit()
 
 func is_dungeon_loaded() -> bool:
 	var map_manager := get_tree().get_first_node_in_group("map_manager")
@@ -154,7 +175,7 @@ func get_encounter_id(pack_number: int) -> String:
 
 func _on_stage_enemy_defeated() -> void:
 	enemies_alive = max(enemies_alive - 1, 0)
-	if enemies_alive <= 0 and not reward_pending and is_dungeon_loaded():
+	if enemies_alive <= 0 and not reward_pending and not death_pending and is_dungeon_loaded():
 		complete_stage()
 	stage_changed.emit()
 
@@ -174,7 +195,7 @@ func complete_stage() -> void:
 	reward_pending_changed.emit()
 
 func continue_to_next_stage() -> void:
-	if not reward_pending:
+	if not reward_pending or death_pending:
 		return
 	clear_streak += 1
 	advance_stage_index()
@@ -182,7 +203,7 @@ func continue_to_next_stage() -> void:
 	start_current_stage()
 
 func return_to_town() -> void:
-	if not reward_pending:
+	if not reward_pending or death_pending:
 		return
 	clear_streak = 0
 	advance_stage_index()
@@ -193,6 +214,43 @@ func return_to_town() -> void:
 		map_manager.load_town()
 	stage_changed.emit()
 	reward_pending_changed.emit()
+
+func fail_current_stage_by_death() -> void:
+	death_pending = true
+	reward_pending = false
+	clear_streak = 0
+	last_reward_gold = 0
+	last_reward_gel = 0
+	clear_stage_enemies()
+	stage_changed.emit()
+	reward_pending_changed.emit()
+	death_pending_changed.emit()
+
+func return_to_town_after_death() -> void:
+	if not death_pending:
+		return
+	death_pending = false
+	clear_stage_enemies()
+	var map_manager := get_tree().get_first_node_in_group("map_manager")
+	if map_manager != null and map_manager.has_method("load_town"):
+		map_manager.load_town()
+	call_deferred("revive_player_after_death")
+	stage_changed.emit()
+	death_pending_changed.emit()
+
+func revive_player_after_death() -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	if player == null:
+		return
+	player.set("is_dead", false)
+	var max_value := int(player.get("max_hp"))
+	player.set("hp", max_value)
+	if player.has_method("stop_all_actions"):
+		player.stop_all_actions()
+	if player.has_method("notify_stats_changed"):
+		player.notify_stats_changed()
+	if player.has_method("queue_redraw"):
+		player.queue_redraw()
 
 func advance_stage_index() -> void:
 	if stage_number >= STAGES_PER_FLOOR:
@@ -219,7 +277,9 @@ func get_stage_name() -> String:
 
 func get_hud_text() -> String:
 	var text := "STAGE %s  REWARD x%.1f  ENEMIES %s" % [get_stage_name(), get_current_reward_multiplier(), enemies_alive]
-	if reward_pending:
+	if death_pending:
+		text += "\nDEAD. Stage failed. Multiplier reset. Return to town."
+	elif reward_pending:
 		text += "\nCLEARED +%sG +%sGEL | N Continue next x%.1f | M Return town" % [last_reward_gold, last_reward_gel, get_next_continue_multiplier()]
 	else:
 		text += "\nClear 3 packs. Hit a sleeping pack to wake that pack only."
