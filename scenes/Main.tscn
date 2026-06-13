@@ -1,7 +1,6 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main_script"]
-[ext_resource type="PackedScene" path="res://scenes/RoomMap.tscn" id="2_room_map_scene"]
 [ext_resource type="PackedScene" path="res://scenes/PlayerLOL.tscn" id="3_player_scene"]
 [ext_resource type="Script" path="res://scripts/game_manager.gd" id="4_game_manager_script"]
 [ext_resource type="Script" path="res://scripts/wave_spawner.gd" id="5_wave_spawner_script"]
@@ -20,7 +19,6 @@ script = ExtResource("1_main_script")
 
 [node name="MapManager" type="Node2D" parent="."]
 script = ExtResource("10_map_manager_script")
-room_map_scene = ExtResource("2_room_map_scene")
 town_map_scene = ExtResource("11_town_map_scene")
 dungeon_map_scene = ExtResource("12_dungeon_map_scene")
 
