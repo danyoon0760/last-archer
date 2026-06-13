@@ -18,11 +18,11 @@ signal activated
 @export var hp_bar_width: float = 44.0
 
 # Stage encounter settings.
-# If start_inactive is true, this enemy will wait until it is hit.
+# If start_inactive is true, this enemy waits until hit.
 # When one enemy in the same encounter_id is hit, the whole pack wakes up.
 @export var start_inactive: bool = false
 @export var encounter_id: String = ""
-@export var leash_radius: float = 900.0
+@export var leash_radius: float = 0.0
 @export var return_to_spawn_when_inactive: bool = true
 
 var hp: int
@@ -31,12 +31,14 @@ var player: Node2D
 var game_manager: Node
 var defeated_once: bool = false
 var active: bool = true
+var has_activated_once: bool = false
 var spawn_position: Vector2
 
 func _ready() -> void:
 	hp = max_hp
 	spawn_position = global_position
 	active = not start_inactive
+	has_activated_once = active
 	add_to_group("enemies")
 	if encounter_id != "":
 		add_to_group("encounter_" + encounter_id)
@@ -69,7 +71,7 @@ func _physics_process(delta: float) -> void:
 	var distance_from_spawn: float = global_position.distance_to(spawn_position)
 
 	if leash_radius > 0.0 and distance_from_spawn > leash_radius:
-		deactivate_and_return()
+		return_to_spawn_without_sleeping()
 		return
 
 	if distance <= attack_range:
@@ -120,20 +122,21 @@ func activate_encounter_pack() -> void:
 			node.activate_enemy()
 
 func activate_enemy() -> void:
+	has_activated_once = true
 	if active:
 		return
 	active = true
 	activated.emit()
 	queue_redraw()
 
-func deactivate_and_return() -> void:
-	if start_inactive:
-		active = false
-		attack_timer = 0.0
-		queue_redraw()
+func return_to_spawn_without_sleeping() -> void:
+	var to_spawn := spawn_position - global_position
+	if to_spawn.length() <= 4.0:
+		velocity = Vector2.ZERO
 	else:
-		velocity = (spawn_position - global_position).normalized() * move_speed
-		move_and_slide()
+		velocity = to_spawn.normalized() * move_speed
+	move_and_slide()
+	queue_redraw()
 
 func defeat() -> void:
 	if defeated_once:
