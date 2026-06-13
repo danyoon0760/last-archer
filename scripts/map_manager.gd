@@ -2,29 +2,23 @@ extends Node2D
 
 signal map_changed(map_name: String)
 
-@export var room_map_scene: PackedScene
 @export var town_map_scene: PackedScene
 @export var dungeon_map_scene: PackedScene
 
 var current_map: Node2D
-var current_map_name: String = "room"
+var current_map_name: String = "town"
 
 func _ready() -> void:
 	add_to_group("map_manager")
-	load_room()
+	load_town()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_1:
-				load_room()
-			KEY_2:
 				load_town()
-			KEY_3:
+			KEY_2:
 				load_dungeon()
-
-func load_room() -> void:
-	load_map(room_map_scene, "room")
 
 func load_town() -> void:
 	load_map(town_map_scene, "town")
