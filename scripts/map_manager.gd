@@ -1,5 +1,7 @@
 extends Node2D
 
+signal map_changed(map_name: String)
+
 @export var room_map_scene: PackedScene
 @export var town_map_scene: PackedScene
 @export var dungeon_map_scene: PackedScene
@@ -40,6 +42,7 @@ func load_map(scene: PackedScene, map_name: String) -> void:
 	current_map_name = map_name
 	add_child(current_map)
 	call_deferred("move_player_to_current_spawn")
+	map_changed.emit(current_map_name)
 
 func move_player_to_current_spawn() -> void:
 	if current_map == null or not is_instance_valid(current_map):
