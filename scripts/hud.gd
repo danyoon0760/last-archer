@@ -92,7 +92,7 @@ func build_status_panel() -> void:
 func build_map_panel() -> void:
 	map_panel = PanelContainer.new()
 	map_panel.position = Vector2(16, 650)
-	map_panel.custom_minimum_size = Vector2(318, 58)
+	map_panel.custom_minimum_size = Vector2(220, 58)
 	add_child(map_panel)
 
 	var margin := MarginContainer.new()
@@ -106,10 +106,6 @@ func build_map_panel() -> void:
 	row.add_theme_constant_override("separation", 8)
 	margin.add_child(row)
 
-	var room_button := make_button("방구석", Vector2(94, 34))
-	room_button.pressed.connect(_on_room_button_pressed)
-	row.add_child(room_button)
-
 	var town_button := make_button("마을", Vector2(94, 34))
 	town_button.pressed.connect(_on_town_button_pressed)
 	row.add_child(town_button)
@@ -122,7 +118,7 @@ func build_town_panel() -> void:
 	town_panel = PanelContainer.new()
 	town_panel.position = Vector2(24, 155)
 	town_panel.custom_minimum_size = Vector2(420, 390)
-	town_panel.visible = false
+	town_panel.visible = true
 	add_child(town_panel)
 
 	var margin := MarginContainer.new()
@@ -176,7 +172,7 @@ func build_town_panel() -> void:
 	town_message_label = Label.new()
 	town_message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	town_message_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	town_message_label.text = "나중에 그래픽/UI 갈아끼우기 전까지 쓰는 임시 마을 메뉴."
+	town_message_label.text = "방구석은 컷씬으로 분리. 실제 루프는 마을과 던전 중심."
 	column.add_child(town_message_label)
 
 func build_reward_panel() -> void:
@@ -293,7 +289,7 @@ func update_status_text() -> void:
 		stage_text = stage_run_manager.get_hud_text()
 
 	if status_label != null:
-		status_label.text = player_text + "\n" + manager_text + "\n" + stage_text
+		status_label.text = player_text + "\n" + manager_text + "\n" + stage_text + "\n1 Town | 2 Dungeon | T Town UI | I Inventory"
 
 func update_skill_bar() -> void:
 	for key in ["Q", "W", "E", "R"]:
@@ -394,9 +390,6 @@ func set_town_message(text: String) -> void:
 	if town_message_label != null:
 		town_message_label.text = text
 
-func _on_room_button_pressed() -> void:
-	load_map("load_room")
-
 func _on_town_button_pressed() -> void:
 	load_map("load_town")
 	set_town_visible(true)
@@ -425,7 +418,7 @@ func _on_alchemy_button_pressed() -> void:
 	set_town_message("연금술방 임시: 나중에 골드로 공격형/도박형 물약 구매.")
 
 func _on_journal_button_pressed() -> void:
-	set_town_message("일지 임시: 전이 이후 세계관 기록을 스테이지 클리어로 해금.")
+	set_town_message("일지 임시: 방구석 전이 컷씬 이후 세계관 기록을 스테이지 클리어로 해금.")
 
 func _on_close_town_button_pressed() -> void:
 	set_town_visible(false)
