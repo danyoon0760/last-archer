@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main_script"]
 [ext_resource type="PackedScene" path="res://scenes/RoomMap.tscn" id="2_room_map_scene"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scripts/map_manager.gd" id="10_map_manager_script"]
 [ext_resource type="PackedScene" path="res://scenes/TownMap.tscn" id="11_town_map_scene"]
 [ext_resource type="PackedScene" path="res://scenes/DungeonMap.tscn" id="12_dungeon_map_scene"]
+[ext_resource type="Script" path="res://scripts/stage_run_manager.gd" id="13_stage_run_script"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main_script")
@@ -30,6 +31,13 @@ position = Vector2(640, 360)
 
 [node name="WaveSpawner" type="Node2D" parent="."]
 script = ExtResource("5_wave_spawner_script")
+slime_scene = ExtResource("6_slime_scene")
+rat_scene = ExtResource("7_rat_scene")
+heavy_slime_scene = ExtResource("8_heavy_slime_scene")
+auto_start = false
+
+[node name="StageRunManager" type="Node" parent="."]
+script = ExtResource("13_stage_run_script")
 slime_scene = ExtResource("6_slime_scene")
 rat_scene = ExtResource("7_rat_scene")
 heavy_slime_scene = ExtResource("8_heavy_slime_scene")
