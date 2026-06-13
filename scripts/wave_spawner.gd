@@ -13,7 +13,7 @@ var enemies_alive: int = 0
 var waiting_for_next_wave: bool = false
 var next_wave_timer: float = 1.0
 var player: Node2D
-game_manager: Node
+var game_manager: Node
 var has_started: bool = false
 
 func _ready() -> void:
