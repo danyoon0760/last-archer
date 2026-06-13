@@ -39,11 +39,21 @@ func setup(start_position: Vector2, shoot_direction: Vector2, custom_damage: int
 	if custom_length > 0.0:
 		arrow_length = custom_length
 
+	apply_augment_projectile_mods(custom_pierce_count)
+
 	if custom_target != null and is_instance_valid(custom_target):
 		locked_target = custom_target
 		has_locked_target = true
 
 	queue_redraw()
+
+func apply_augment_projectile_mods(custom_pierce_count: int) -> void:
+	var augment_manager := get_tree().get_first_node_in_group("augment_manager")
+	if augment_manager == null:
+		return
+	if augment_manager.has_method("has_augment") and augment_manager.has_augment("piercing_arrow") and custom_pierce_count < 0:
+		pierce_count += 1
+		arrow_color = Color(0.95, 1.0, 0.65)
 
 func _physics_process(delta: float) -> void:
 	age += delta
@@ -59,7 +69,6 @@ func _physics_process(delta: float) -> void:
 		var wanted_direction: Vector2 = to_target.normalized()
 		direction = direction.lerp(wanted_direction, clampf(homing_turn_speed * delta, 0.0, 1.0)).normalized()
 	else:
-		# If the locked target died, keep flying in the last direction.
 		locked_target = null
 
 	global_position += direction * speed * delta
@@ -67,12 +76,10 @@ func _physics_process(delta: float) -> void:
 
 func _on_body_entered(body: Node) -> void:
 	if has_locked_target:
-		# Targeted basic attacks must ignore every body except the original target.
 		if body == locked_target:
 			hit_target(body)
 		return
 
-	# Non-targeted skill shots still behave like normal projectiles.
 	if hit_bodies.has(body):
 		return
 	if body.has_method("take_damage"):
@@ -104,8 +111,6 @@ func is_valid_target(target: Variant) -> bool:
 	return (target as Node2D).is_inside_tree()
 
 func _draw() -> void:
-	# Temporary arrow placeholder.
-	# Later, this will become a pixel arrow sprite.
 	var half_length: float = arrow_length / 2.0
 	draw_line(Vector2(-half_length, 0), Vector2(half_length, 0), arrow_color, arrow_width)
 	draw_polygon(
