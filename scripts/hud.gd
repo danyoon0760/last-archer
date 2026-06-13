@@ -149,7 +149,7 @@ func build_town_panel() -> void:
 	dungeon_button.pressed.connect(_on_enter_dungeon_button_pressed)
 	column.add_child(dungeon_button)
 
-	var equipment_button := make_button("장비상점 / 임시")
+	var equipment_button := make_button("장비상점: 활")
 	equipment_button.pressed.connect(_on_equipment_button_pressed)
 	column.add_child(equipment_button)
 
@@ -254,7 +254,7 @@ func build_death_label() -> void:
 	death_label.position = Vector2(505, 310)
 	death_label.add_theme_font_size_override("font_size", 34)
 	death_label.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
-	death_label.text = "DEAD\nPress R to Restart"
+	death_label.text = "DEAD\nUse death panel"
 	death_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	death_label.visible = false
 	add_child(death_label)
@@ -345,10 +345,14 @@ func toggle_town_panel() -> void:
 func get_town_text() -> String:
 	var gold_text := "0"
 	var gel_text := "0"
+	var equipment_text := "장비 없음"
 	if game_manager != null:
 		gold_text = str(game_manager.get("gold"))
 		gel_text = str(game_manager.get("slime_gel"))
-	return "[Lastwell - 임시 마을 UI]\nGold: " + gold_text + " / Gel: " + gel_text
+	var equipment_manager := get_tree().get_first_node_in_group("equipment_manager")
+	if equipment_manager != null and equipment_manager.has_method("get_equipment_summary"):
+		equipment_text = equipment_manager.get_equipment_summary()
+	return "[Lastwell - 임시 마을 UI]\nGold: " + gold_text + " / Gel: " + gel_text + "\n" + equipment_text
 
 func get_reward_text() -> String:
 	if not is_instance_valid(stage_run_manager):
@@ -409,7 +413,10 @@ func _on_enter_dungeon_button_pressed() -> void:
 	load_map("load_dungeon")
 
 func _on_equipment_button_pressed() -> void:
-	set_town_message("장비상점 임시: 나중에 활 / 흉갑 / 신발 구매 UI 연결.")
+	var shop := get_tree().get_first_node_in_group("equipment_shop_overlay")
+	if shop != null and shop.has_method("open_shop"):
+		shop.open_shop()
+	set_town_message("장비상점 열림. 활 3개 구매/장착 테스트.")
 
 func _on_food_button_pressed() -> void:
 	set_town_message("식당 임시: 나중에 골드로 다음 스테이지용 음식 버프 구매.")
