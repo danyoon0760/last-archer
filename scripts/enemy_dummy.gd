@@ -146,6 +146,7 @@ func defeat() -> void:
 	set_process(false)
 	spawn_exp_orbs()
 	give_defeat_rewards()
+	apply_vampiric_hunter_heal()
 	defeated.emit()
 	queue_free()
 
@@ -154,6 +155,23 @@ func give_defeat_rewards() -> void:
 		game_manager = get_tree().get_first_node_in_group("game_manager")
 	if is_instance_valid(game_manager) and game_manager.has_method("add_defeat_rewards"):
 		game_manager.add_defeat_rewards(gold_reward, slime_gel_reward)
+
+func apply_vampiric_hunter_heal() -> void:
+	var augment_manager := get_tree().get_first_node_in_group("augment_manager")
+	if augment_manager == null:
+		return
+	if not augment_manager.has_method("has_augment") or not augment_manager.has_augment("vampiric_hunter"):
+		return
+	var target_player := get_tree().get_first_node_in_group("player")
+	if target_player == null or bool(target_player.get("is_dead")):
+		return
+	var max_value := int(target_player.get("max_hp"))
+	var current_value := int(target_player.get("hp"))
+	target_player.set("hp", min(max_value, current_value + 5))
+	if target_player.has_method("notify_stats_changed"):
+		target_player.notify_stats_changed()
+	if target_player.has_method("queue_redraw"):
+		target_player.queue_redraw()
 
 func spawn_exp_orbs() -> void:
 	if exp_orb_scene == null:
