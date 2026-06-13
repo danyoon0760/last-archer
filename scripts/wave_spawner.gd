@@ -6,19 +6,21 @@ extends Node2D
 @export var spawn_radius: float = 520.0
 @export var delay_between_waves: float = 2.0
 @export var max_waves_before_loop: int = 999
+@export var auto_start: bool = false
 
 var wave: int = 0
 var enemies_alive: int = 0
 var waiting_for_next_wave: bool = false
 var next_wave_timer: float = 1.0
 var player: Node2D
-var game_manager: Node
+game_manager: Node
 var has_started: bool = false
 
 func _ready() -> void:
 	player = get_tree().get_first_node_in_group("player") as Node2D
 	game_manager = get_tree().get_first_node_in_group("game_manager")
-	call_deferred("start_first_wave")
+	if auto_start:
+		call_deferred("start_first_wave")
 
 func start_first_wave() -> void:
 	if has_started:
