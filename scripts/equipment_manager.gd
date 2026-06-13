@@ -53,23 +53,25 @@ func get_bow_desc(id: String) -> String:
 
 func get_bow_price(id: String) -> int:
 	if bow_data.has(id):
-		return int(bow_data[id].get("price", 0))
+		return roundi(float(bow_data[id].get("price", 0)))
 	return 0
 
 func get_equipped_bow_name() -> String:
 	return get_bow_name(equipped_bow)
 
 func get_equipped_damage() -> int:
-	return int(bow_data.get(equipped_bow, bow_data["basic_bow"]).get("damage", 25))
+	var data: Dictionary = bow_data.get(equipped_bow, bow_data["basic_bow"])
+	return roundi(float(data.get("damage", 25)))
 
 func get_equipped_attack_speed() -> float:
-	return float(bow_data.get(equipped_bow, bow_data["basic_bow"]).get("attack_speed", 1.0))
+	var data: Dictionary = bow_data.get(equipped_bow, bow_data["basic_bow"])
+	return float(data.get("attack_speed", 1.0))
 
 func get_bow_stat_text(id: String) -> String:
 	if not bow_data.has(id):
 		return ""
 	var data: Dictionary = bow_data[id]
-	return "공격력 %s / 공격속도 %.2f" % [int(data.get("damage", 0)), float(data.get("attack_speed", 0.0))]
+	return "공격력 %s / 공격속도 %.2f" % [roundi(float(data.get("damage", 0))), float(data.get("attack_speed", 0.0))]
 
 func buy_or_equip_bow(id: String) -> String:
 	if not bow_data.has(id):
@@ -79,11 +81,11 @@ func buy_or_equip_bow(id: String) -> String:
 		apply_equipment_to_player()
 		return get_bow_name(id) + " 장착."
 
-	var price := get_bow_price(id)
+	var price: int = get_bow_price(id)
 	var game_manager := get_tree().get_first_node_in_group("game_manager")
 	if game_manager == null:
 		return "GameManager 없음."
-	var gold := int(game_manager.get("gold"))
+	var gold: int = roundi(float(game_manager.get("gold")))
 	if gold < price:
 		return "골드 부족. 필요: " + str(price) + "G"
 	game_manager.set("gold", gold - price)
