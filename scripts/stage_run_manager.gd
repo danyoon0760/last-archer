@@ -80,9 +80,9 @@ func move_player_to_dungeon_spawn() -> void:
 
 func spawn_three_encounter_packs() -> void:
 	var pack_positions: Array[Vector2] = [
-		Vector2(360.0, 320.0),
-		Vector2(760.0, 410.0),
-		Vector2(1160.0, 330.0)
+		Vector2(680.0, 325.0),
+		Vector2(1560.0, 325.0),
+		Vector2(2480.0, 325.0)
 	]
 
 	for pack_index in range(3):
@@ -105,7 +105,6 @@ func build_pack_enemy_list(pack_number: int) -> Array[PackedScene]:
 	if pack_number == 3 and stage_number >= 1:
 		heavy_count = 1 + int(stage_number / 5) + max(0, floor_number - 1)
 	if stage_number == STAGES_PER_FLOOR:
-		# Boss-stage placeholder until a real boss scene exists.
 		heavy_count += 2
 		rat_count += 2
 
@@ -141,7 +140,7 @@ func spawn_pack_enemy(scene: PackedScene, pack_position: Vector2, pack_number: i
 	if enemy_node.get("encounter_id") != null:
 		enemy_node.set("encounter_id", encounter_name)
 	if enemy_node.get("leash_radius") != null:
-		enemy_node.set("leash_radius", 980.0)
+		enemy_node.set("leash_radius", 0.0)
 
 	var parent := get_tree().current_scene
 	if parent == null:
