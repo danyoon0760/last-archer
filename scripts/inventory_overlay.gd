@@ -21,6 +21,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_I or event.keycode == KEY_TAB or event.keycode == KEY_ESCAPE:
 			set_panel_visible(not panel.visible)
 
+func to_number(value: Variant, fallback: float = 0.0) -> float:
+	if value == null:
+		return fallback
+	var text: String = str(value)
+	if text == "":
+		return fallback
+	return text.to_float()
+
+func to_whole_number(value: Variant, fallback: int = 0) -> int:
+	return roundi(to_number(value, fallback))
+
 func refresh_refs() -> void:
 	player = get_tree().get_first_node_in_group("player")
 	game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -329,10 +340,10 @@ func get_status_text() -> String:
 	var move_speed: float = 0.0
 	var dodge_cd: float = 0.0
 	if player != null:
-		damage = roundi(float(player.get("basic_attack_damage")))
-		attack_speed = float(player.get("attack_speed"))
-		move_speed = float(player.get("move_speed"))
-		dodge_cd = float(player.get("dodge_cooldown"))
+		damage = to_whole_number(player.get("basic_attack_damage"), 0)
+		attack_speed = to_number(player.get("attack_speed"), 0.0)
+		move_speed = to_number(player.get("move_speed"), 0.0)
+		dodge_cd = to_number(player.get("dodge_cooldown"), 0.0)
 	var equipment_text := "장비 없음"
 	if equipment_manager != null and equipment_manager.has_method("get_equipment_summary"):
 		equipment_text = str(equipment_manager.call("get_equipment_summary"))
