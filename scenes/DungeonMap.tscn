@@ -146,8 +146,8 @@ polygon = PackedVector2Array(-130, -45, 130, -45, 130, 45, -130, 45)
 shape = SubResource("RuinWide")
 
 [node name="PlayerSpawn" type="Marker2D" parent="."]
-position = Vector2(640, 380)
+position = Vector2(0, 355)
 
 [node name="Label" type="Label" parent="."]
 position = Vector2(-70, -130)
-text = "DUNGEON / 3"
+text = "DUNGEON TEST / 3 PACK STAGE"
