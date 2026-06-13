@@ -9,21 +9,33 @@ var town_panel: PanelContainer
 var town_label: Label
 var death_label: Label
 var game_manager: Node
+var stage_run_manager: Node
 var player: Node
 
 func _ready() -> void:
 	game_manager = get_tree().get_first_node_in_group("game_manager")
+	stage_run_manager = get_tree().get_first_node_in_group("stage_run_manager")
 	player = get_tree().get_first_node_in_group("player")
 	build_ui()
+	connect_signals()
+	update_status()
+	set_town_visible(false)
+
+func connect_signals() -> void:
 	if game_manager != null:
 		if game_manager.has_signal("stats_changed"):
 			game_manager.stats_changed.connect(update_status)
 		if game_manager.has_signal("town_toggled"):
 			game_manager.town_toggled.connect(set_town_visible)
-	update_status()
-	set_town_visible(false)
+	if stage_run_manager != null:
+		if stage_run_manager.has_signal("stage_changed"):
+			stage_run_manager.stage_changed.connect(update_status)
+		if stage_run_manager.has_signal("reward_pending_changed"):
+			stage_run_manager.reward_pending_changed.connect(update_status)
 
 func _process(_delta: float) -> void:
+	if not is_instance_valid(stage_run_manager):
+		stage_run_manager = get_tree().get_first_node_in_group("stage_run_manager")
 	update_status()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -43,7 +55,7 @@ func make_click_through(control: Control) -> void:
 func build_ui() -> void:
 	status_panel = PanelContainer.new()
 	status_panel.position = Vector2(16, 14)
-	status_panel.custom_minimum_size = Vector2(420, 92)
+	status_panel.custom_minimum_size = Vector2(560, 130)
 	make_click_through(status_panel)
 	add_child(status_panel)
 
@@ -58,7 +70,7 @@ func build_ui() -> void:
 	status_label = Label.new()
 	make_click_through(status_label)
 	status_label.add_theme_color_override("font_color", Color.WHITE)
-	status_label.add_theme_font_size_override("font_size", 17)
+	status_label.add_theme_font_size_override("font_size", 16)
 	margin.add_child(status_label)
 
 	skill_panel = PanelContainer.new()
@@ -112,7 +124,7 @@ func build_ui() -> void:
 	add_child(death_label)
 
 	town_panel = PanelContainer.new()
-	town_panel.position = Vector2(24, 115)
+	town_panel.position = Vector2(24, 155)
 	town_panel.custom_minimum_size = Vector2(450, 280)
 	make_click_through(town_panel)
 	add_child(town_panel)
@@ -127,6 +139,8 @@ func build_ui() -> void:
 func update_status() -> void:
 	if not is_instance_valid(player):
 		player = get_tree().get_first_node_in_group("player")
+	if not is_instance_valid(stage_run_manager):
+		stage_run_manager = get_tree().get_first_node_in_group("stage_run_manager")
 
 	var player_text := ""
 	if is_instance_valid(player) and player.has_method("get_hud_text"):
@@ -136,8 +150,12 @@ func update_status() -> void:
 	if game_manager != null and game_manager.has_method("get_status_text"):
 		manager_text = game_manager.get_status_text()
 
+	var stage_text := ""
+	if is_instance_valid(stage_run_manager) and stage_run_manager.has_method("get_hud_text"):
+		stage_text = stage_run_manager.get_hud_text()
+
 	if status_label != null:
-		status_label.text = player_text + "\n" + manager_text + "\nT Town | H Heal in town | S Sell gel in town"
+		status_label.text = player_text + "\n" + manager_text + "\n" + stage_text + "\n1 Room | 2 Town | 3 Dungeon | T Town menu"
 
 	update_skill_bar()
 
@@ -184,7 +202,7 @@ func get_town_text() -> String:
 	return "[Lastwell - Temporary Town Menu]\n\n" + \
 		"H: Rest at inn / full heal\n" + \
 		"S: Sell slime gel / 2 gold each\n" + \
-		"T: Return to labyrinth\n\n" + \
+		"T: Close menu\n\n" + \
 		"Gold: " + gold_text + "\n" + \
 		"Slime Gel: " + gel_text + "\n\n" + \
-		"Later: Guild, equipment shop, dismantling yard, old man's house."
+		"Later: equipment shop, restaurant, alchemy room, journal."
