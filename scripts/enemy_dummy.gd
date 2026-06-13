@@ -1,6 +1,7 @@
 extends CharacterBody2D
 
 signal defeated
+signal activated
 
 @export var max_hp: int = 100
 @export var move_speed: float = 135.0
@@ -16,15 +17,29 @@ signal defeated
 @export var body_color: Color = Color(0.9, 0.15, 0.12)
 @export var hp_bar_width: float = 44.0
 
+# Stage encounter settings.
+# If start_inactive is true, this enemy will wait until it is hit.
+# When one enemy in the same encounter_id is hit, the whole pack wakes up.
+@export var start_inactive: bool = false
+@export var encounter_id: String = ""
+@export var leash_radius: float = 900.0
+@export var return_to_spawn_when_inactive: bool = true
+
 var hp: int
 var attack_timer: float = 0.0
 var player: Node2D
 var game_manager: Node
 var defeated_once: bool = false
+var active: bool = true
+var spawn_position: Vector2
 
 func _ready() -> void:
 	hp = max_hp
+	spawn_position = global_position
+	active = not start_inactive
 	add_to_group("enemies")
+	if encounter_id != "":
+		add_to_group("encounter_" + encounter_id)
 	find_player()
 	game_manager = get_tree().get_first_node_in_group("game_manager")
 	queue_redraw()
@@ -35,6 +50,10 @@ func _physics_process(delta: float) -> void:
 
 	if attack_timer > 0.0:
 		attack_timer = maxf(attack_timer - delta, 0.0)
+
+	if not active:
+		process_inactive(delta)
+		return
 
 	if not is_instance_valid(player):
 		find_player()
@@ -47,6 +66,11 @@ func _physics_process(delta: float) -> void:
 
 	var to_player: Vector2 = player.global_position - global_position
 	var distance: float = to_player.length()
+	var distance_from_spawn: float = global_position.distance_to(spawn_position)
+
+	if leash_radius > 0.0 and distance_from_spawn > leash_radius:
+		deactivate_and_return()
+		return
 
 	if distance <= attack_range:
 		velocity = Vector2.ZERO
@@ -57,6 +81,15 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 
 	move_and_slide()
+	queue_redraw()
+
+func process_inactive(delta: float) -> void:
+	if return_to_spawn_when_inactive and global_position.distance_to(spawn_position) > 4.0:
+		var to_spawn := spawn_position - global_position
+		velocity = to_spawn.normalized() * min(move_speed, to_spawn.length() / maxf(delta, 0.001))
+		move_and_slide()
+	else:
+		velocity = Vector2.ZERO
 	queue_redraw()
 
 func find_player() -> void:
@@ -72,10 +105,35 @@ func try_attack_player() -> void:
 func take_damage(amount: int) -> void:
 	if defeated_once:
 		return
+	activate_encounter_pack()
 	hp -= amount
 	queue_redraw()
 	if hp <= 0:
 		defeat()
+
+func activate_encounter_pack() -> void:
+	if encounter_id == "":
+		activate_enemy()
+		return
+	for node in get_tree().get_nodes_in_group("encounter_" + encounter_id):
+		if node != null and is_instance_valid(node) and node.has_method("activate_enemy"):
+			node.activate_enemy()
+
+func activate_enemy() -> void:
+	if active:
+		return
+	active = true
+	activated.emit()
+	queue_redraw()
+
+func deactivate_and_return() -> void:
+	if start_inactive:
+		active = false
+		attack_timer = 0.0
+		queue_redraw()
+	else:
+		velocity = (spawn_position - global_position).normalized() * move_speed
+		move_and_slide()
 
 func defeat() -> void:
 	if defeated_once:
@@ -111,13 +169,18 @@ func spawn_exp_orbs() -> void:
 			orb.call_deferred("setup", global_position, direction, strength, 1)
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, body_radius, body_color)
+	var draw_color := body_color
+	if not active:
+		draw_color = body_color.darkened(0.45)
+	draw_circle(Vector2.ZERO, body_radius, draw_color)
 	draw_arc(Vector2.ZERO, attack_range, 0.0, TAU, 36, Color(1.0, 0.35, 0.35, 0.35), 1.5)
 
-	if is_instance_valid(player):
+	if active and is_instance_valid(player):
 		var to_player: Vector2 = player.global_position - global_position
 		if to_player.length() <= chase_range:
 			draw_line(Vector2.ZERO, to_player.normalized() * (body_radius + 4.0), Color(1.0, 0.7, 0.7), 2.0)
+	elif not active:
+		draw_string(ThemeDB.fallback_font, Vector2(-18, body_radius + 20), "SLEEP", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 10, Color(0.65, 0.65, 0.65))
 
 	var bar_height: float = 6.0
 	var hp_ratio: float = clampf(float(hp) / float(max_hp), 0.0, 1.0)
