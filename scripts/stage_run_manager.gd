@@ -191,8 +191,14 @@ func complete_stage() -> void:
 	if game_manager != null and game_manager.has_method("add_defeat_rewards"):
 		game_manager.add_defeat_rewards(last_reward_gold, last_reward_gel)
 
+	maybe_start_augment_offer()
 	stage_changed.emit()
 	reward_pending_changed.emit()
+
+func maybe_start_augment_offer() -> void:
+	var augment_manager := get_tree().get_first_node_in_group("augment_manager")
+	if augment_manager != null and augment_manager.has_method("start_offer"):
+		augment_manager.start_offer(floor_number, stage_number)
 
 func continue_to_next_stage() -> void:
 	if not reward_pending or death_pending:
@@ -208,6 +214,7 @@ func return_to_town() -> void:
 	clear_streak = 0
 	advance_stage_index()
 	reward_pending = false
+	reset_run_augments()
 	clear_stage_enemies()
 	var map_manager := get_tree().get_first_node_in_group("map_manager")
 	if map_manager != null and map_manager.has_method("load_town"):
@@ -221,6 +228,7 @@ func fail_current_stage_by_death() -> void:
 	clear_streak = 0
 	last_reward_gold = 0
 	last_reward_gel = 0
+	reset_run_augments()
 	clear_stage_enemies()
 	stage_changed.emit()
 	reward_pending_changed.emit()
@@ -237,6 +245,11 @@ func return_to_town_after_death() -> void:
 	call_deferred("revive_player_after_death")
 	stage_changed.emit()
 	death_pending_changed.emit()
+
+func reset_run_augments() -> void:
+	var augment_manager := get_tree().get_first_node_in_group("augment_manager")
+	if augment_manager != null and augment_manager.has_method("reset_run_augments"):
+		augment_manager.reset_run_augments()
 
 func revive_player_after_death() -> void:
 	var player := get_tree().get_first_node_in_group("player")
@@ -277,6 +290,9 @@ func get_stage_name() -> String:
 
 func get_hud_text() -> String:
 	var text := "STAGE %s  REWARD x%.1f  ENEMIES %s" % [get_stage_name(), get_current_reward_multiplier(), enemies_alive]
+	var augment_manager := get_tree().get_first_node_in_group("augment_manager")
+	if augment_manager != null and augment_manager.has_method("get_active_summary"):
+		text += "  AUG: " + augment_manager.get_active_summary()
 	if death_pending:
 		text += "\nDEAD. Stage failed. Multiplier reset. Return to town."
 	elif reward_pending:
