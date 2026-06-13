@@ -85,9 +85,9 @@ func refresh_shop() -> void:
 	if not is_instance_valid(game_manager):
 		game_manager = get_tree().get_first_node_in_group("game_manager")
 	clear_list()
-	var gold := 0
+	var gold: int = 0
 	if game_manager != null:
-		gold = int(game_manager.get("gold"))
+		gold = roundi(float(game_manager.get("gold")))
 	message_label.text = "보유 골드: " + str(gold) + "G\n마을에서만 장비를 구매/장착한다."
 	if equipment_manager == null:
 		return
@@ -127,31 +127,31 @@ func make_bow_row(id: String) -> PanelContainer:
 	return row_panel
 
 func build_bow_text(id: String) -> String:
-	var name := equipment_manager.get_bow_name(id)
-	var stat := equipment_manager.get_bow_stat_text(id)
-	var desc := equipment_manager.get_bow_desc(id)
-	var price := equipment_manager.get_bow_price(id)
-	var owned := equipment_manager.owns_bow(id)
-	var equipped := str(equipment_manager.get("equipped_bow")) == id
-	var state := "미보유"
-	if equipped:
+	var bow_name: String = str(equipment_manager.call("get_bow_name", id))
+	var bow_stat: String = str(equipment_manager.call("get_bow_stat_text", id))
+	var bow_desc: String = str(equipment_manager.call("get_bow_desc", id))
+	var bow_price: int = roundi(float(equipment_manager.call("get_bow_price", id)))
+	var is_owned: bool = bool(equipment_manager.call("owns_bow", id))
+	var is_equipped: bool = str(equipment_manager.get("equipped_bow")) == id
+	var state: String = "미보유"
+	if is_equipped:
 		state = "장착중"
-	elif owned:
+	elif is_owned:
 		state = "보유"
-	return name + "  [" + state + "]\n" + stat + " / 가격 " + str(price) + "G\n" + desc
+	return bow_name + "  [" + state + "]\n" + bow_stat + " / 가격 " + str(bow_price) + "G\n" + bow_desc
 
 func get_bow_button_text(id: String) -> String:
 	if str(equipment_manager.get("equipped_bow")) == id:
 		return "장착중"
-	if equipment_manager.owns_bow(id):
+	if bool(equipment_manager.call("owns_bow", id)):
 		return "장착"
 	return "구매"
 
 func _on_bow_pressed(id: String) -> void:
 	if not is_instance_valid(equipment_manager):
 		return
-	var result := equipment_manager.buy_or_equip_bow(id)
-	message_label.text = result
+	var result_text: String = str(equipment_manager.call("buy_or_equip_bow", id))
+	message_label.text = result_text
 	refresh_shop()
 
 func _on_close_pressed() -> void:
