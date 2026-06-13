@@ -51,6 +51,17 @@ func _ready() -> void:
 	add_to_group("augment_manager")
 	call_deferred("apply_augments_to_player")
 
+func to_number(value: Variant, fallback: float = 0.0) -> float:
+	if value == null:
+		return fallback
+	var text: String = str(value)
+	if text == "":
+		return fallback
+	return text.to_float()
+
+func to_whole_number(value: Variant, fallback: int = 0) -> int:
+	return roundi(to_number(value, fallback))
+
 func should_offer_for_stage(stage_number: int) -> bool:
 	return OFFER_STAGES.has(stage_number)
 
@@ -162,12 +173,12 @@ func apply_augments_to_player() -> void:
 	apply_base_stats(player)
 
 	if has_augment("swift_shot"):
-		player.set("attack_speed", float(player.get("attack_speed")) + 0.35)
+		player.set("attack_speed", to_number(player.get("attack_speed"), fallback_attack_speed) + 0.35)
 	if has_augment("power_arrow"):
-		player.set("basic_attack_damage", roundi(float(player.get("basic_attack_damage"))) + 8)
+		player.set("basic_attack_damage", to_whole_number(player.get("basic_attack_damage"), fallback_basic_attack_damage) + 8)
 	if has_augment("roll_shot"):
-		player.set("dodge_cooldown", maxf(0.55, float(player.get("dodge_cooldown")) * 0.72))
-		player.set("basic_attack_damage", roundi(float(player.get("basic_attack_damage"))) + 3)
+		player.set("dodge_cooldown", maxf(0.55, to_number(player.get("dodge_cooldown"), fallback_dodge_cooldown) * 0.72))
+		player.set("basic_attack_damage", to_whole_number(player.get("basic_attack_damage"), fallback_basic_attack_damage) + 3)
 
 	if player.has_method("notify_stats_changed"):
 		player.notify_stats_changed()
@@ -176,11 +187,11 @@ func apply_base_stats(player: Node) -> void:
 	var equipment_manager := get_tree().get_first_node_in_group("equipment_manager")
 	if equipment_manager != null:
 		if equipment_manager.has_method("get_equipped_attack_speed"):
-			player.set("attack_speed", float(equipment_manager.call("get_equipped_attack_speed")))
+			player.set("attack_speed", to_number(equipment_manager.call("get_equipped_attack_speed"), fallback_attack_speed))
 		else:
 			player.set("attack_speed", fallback_attack_speed)
 		if equipment_manager.has_method("get_equipped_damage"):
-			player.set("basic_attack_damage", roundi(float(equipment_manager.call("get_equipped_damage"))))
+			player.set("basic_attack_damage", to_whole_number(equipment_manager.call("get_equipped_damage"), fallback_basic_attack_damage))
 		else:
 			player.set("basic_attack_damage", fallback_basic_attack_damage)
 	else:
@@ -191,7 +202,7 @@ func apply_base_stats(player: Node) -> void:
 func capture_fallback_stats(player: Node) -> void:
 	if fallback_stats_captured:
 		return
-	fallback_attack_speed = float(player.get("attack_speed"))
-	fallback_basic_attack_damage = roundi(float(player.get("basic_attack_damage")))
-	fallback_dodge_cooldown = float(player.get("dodge_cooldown"))
+	fallback_attack_speed = to_number(player.get("attack_speed"), 1.0)
+	fallback_basic_attack_damage = to_whole_number(player.get("basic_attack_damage"), 25)
+	fallback_dodge_cooldown = to_number(player.get("dodge_cooldown"), 1.2)
 	fallback_stats_captured = true
